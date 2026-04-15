@@ -2,7 +2,7 @@ import { Resend } from 'resend'
 import { createServiceClient } from '@/lib/supabase/server'
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY)
-const FROM = 'Edly <noreply@veravi.se>'
+const FROM = 'Edly <admin@edly.se>'
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'johan@edly.se'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
