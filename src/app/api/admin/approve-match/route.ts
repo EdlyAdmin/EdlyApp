@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Förslag hittades inte.' }, { status: 404 })
   }
 
-  const teacher = proposal.teachers as { name: string; email: string }
-  const child = proposal.children as { family_id: string; families: { parent_name: string; email: string } }
+  const teacher = (Array.isArray(proposal.teachers) ? proposal.teachers[0] : proposal.teachers) as { name: string; email: string }
+  const child = (Array.isArray(proposal.children) ? proposal.children[0] : proposal.children) as { family_id: string; families: { parent_name: string; email: string } }
   const family = child.families
 
   // Skapa en grupp för läraren
