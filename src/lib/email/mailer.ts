@@ -1,7 +1,7 @@
 import { Resend } from 'resend'
 import { createServiceClient } from '@/lib/supabase/server'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const getResend = () => new Resend(process.env.RESEND_API_KEY)
 const FROM = 'Edly <noreply@veravi.se>'
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'johan@edly.se'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
@@ -16,7 +16,7 @@ export async function sendIntroMail(
   parentName: string, parentEmail: string
 ) {
   const results = await Promise.allSettled([
-    resend.emails.send({
+    getResend().emails.send({
       from: FROM,
       to: teacherEmail,
       subject: 'Edly — Du har fått ett nytt undervisningsuppdrag!',
@@ -29,7 +29,7 @@ export async function sendIntroMail(
         <p>Varma hälsningar,<br>Edly-teamet</p>
       `,
     }),
-    resend.emails.send({
+    getResend().emails.send({
       from: FROM,
       to: parentEmail,
       subject: 'Edly — Din familj har fått en lärare!',
@@ -53,7 +53,7 @@ export async function sendIntroMail(
 }
 
 export async function sendTeacherNotifyToAdmin(teacherName: string, teacherEmail: string, subjectsCan: string[]) {
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: ADMIN_EMAIL,
     subject: `Edly — Ny läraransökan: ${teacherName}`,
@@ -71,7 +71,7 @@ export async function sendTeacherNotifyToAdmin(teacherName: string, teacherEmail
 }
 
 export async function sendTeacherWelcome(teacherName: string, teacherEmail: string) {
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: teacherEmail,
     subject: 'Edly — Din ansökan har godkänts!',
@@ -88,7 +88,7 @@ export async function sendTeacherWelcome(teacherName: string, teacherEmail: stri
 }
 
 export async function sendTeacherRejected(teacherName: string, teacherEmail: string) {
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: teacherEmail,
     subject: 'Edly — Din ansökan',
@@ -105,7 +105,7 @@ export async function sendTeacherRejected(teacherName: string, teacherEmail: str
 export async function sendNewChildNotification(teachers: { email: string; name: string }[]) {
   await Promise.allSettled(
     teachers.map(t =>
-      resend.emails.send({
+      getResend().emails.send({
         from: FROM,
         to: t.email,
         subject: 'Edly — Nytt barn i uppdragsbanken',
