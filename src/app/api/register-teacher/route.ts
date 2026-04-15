@@ -3,8 +3,22 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { sendTeacherNotifyToAdmin } from '@/lib/email/mailer'
 import type { Subject } from '@/lib/supabase/types'
 
+async function verifyTurnstile(token: string) {
+  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret: process.env.TURNSTILE_SECRET_KEY, response: token }),
+  })
+  const data = await res.json()
+  return data.success === true
+}
+
 export async function POST(req: NextRequest) {
-  const { userId, name, email, phone, subjectsCan, subjectsBlocked, maxGroups, motivation } = await req.json()
+  const { userId, name, email, phone, subjectsCan, subjectsBlocked, maxGroups, motivation, turnstileToken } = await req.json()
+
+  if (!turnstileToken || !(await verifyTurnstile(turnstileToken))) {
+    return NextResponse.json({ error: 'CAPTCHA-verifiering misslyckades.' }, { status: 400 })
+  }
 
   const supabase = createServiceClient()
 

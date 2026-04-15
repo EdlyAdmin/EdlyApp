@@ -7,6 +7,7 @@ import { AuthLayout } from '@/components/ui/AuthLayout'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import type { Subject } from '@/lib/supabase/types'
+import { Turnstile } from '@/components/ui/Turnstile'
 
 const SUBJECTS: { value: Subject; label: string }[] = [
   { value: 'svenska', label: 'Svenska' },
@@ -29,6 +30,7 @@ export default function FamiljRegistrera() {
   const [error, setError] = useState('')
   const [consent, setConsent] = useState(false)
   const [memberConsent, setMemberConsent] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   const [form, setForm] = useState({
     firstName: '',
@@ -67,6 +69,7 @@ export default function FamiljRegistrera() {
 
     if (!memberConsent) { setError('Du behöver godkänna medlemskapet för ditt barn.'); return }
     if (!consent) { setError('Du behöver godkänna dataskyddspolicyn.'); return }
+    if (!turnstileToken) { setError('Vänligen bekräfta att du inte är en robot.'); return }
     if (form.subjects.length === 0) { setError('Välj minst ett ämne.'); return }
     if (form.diagnoses.includes('annat') && !form.diagnosisOther.trim()) {
       setError('Beskriv gärna vad du menar med "Annat".'); return
@@ -101,6 +104,7 @@ export default function FamiljRegistrera() {
         diagnoses: form.diagnoses,
         diagnosisOther: form.diagnosisOther,
         extraInfo: form.extraInfo,
+        turnstileToken,
       }),
     })
 
@@ -240,6 +244,8 @@ export default function FamiljRegistrera() {
             </span>
           </label>
         </div>
+
+        <Turnstile onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
 
         {error && (
           <p className="rounded-lg bg-orange-50 px-4 py-3 text-sm text-(--accent-org)" role="alert">

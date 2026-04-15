@@ -4,8 +4,22 @@ import { runMatching } from '@/lib/matching'
 import { sendNewChildNotification } from '@/lib/email/mailer'
 import type { Subject } from '@/lib/supabase/types'
 
+async function verifyTurnstile(token: string) {
+  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret: process.env.TURNSTILE_SECRET_KEY, response: token }),
+  })
+  const data = await res.json()
+  return data.success === true
+}
+
 export async function POST(req: NextRequest) {
-  const { userId, parentName, email, childName, childBirthdate, subjects, diagnoses, diagnosisOther, extraInfo } = await req.json()
+  const { userId, parentName, email, childName, childBirthdate, subjects, diagnoses, diagnosisOther, extraInfo, turnstileToken } = await req.json()
+
+  if (!turnstileToken || !(await verifyTurnstile(turnstileToken))) {
+    return NextResponse.json({ error: 'CAPTCHA-verifiering misslyckades.' }, { status: 400 })
+  }
 
   const supabase = createServiceClient()
 

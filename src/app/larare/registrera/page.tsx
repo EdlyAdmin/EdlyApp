@@ -7,6 +7,7 @@ import { AuthLayout } from '@/components/ui/AuthLayout'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import type { Subject } from '@/lib/supabase/types'
+import { Turnstile } from '@/components/ui/Turnstile'
 
 const SUBJECTS: { value: Subject; label: string }[] = [
   { value: 'svenska', label: 'Svenska' },
@@ -18,6 +19,7 @@ export default function LärareRegistrera() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   const [form, setForm] = useState({
     firstName: '',
@@ -60,6 +62,10 @@ export default function LärareRegistrera() {
       setError('Välj minst ett ämne du kan undervisa i.')
       return
     }
+    if (!turnstileToken) {
+      setError('Vänligen bekräfta att du inte är en robot.')
+      return
+    }
 
     setLoading(true)
     const supabase = createClient()
@@ -88,6 +94,7 @@ export default function LärareRegistrera() {
         subjectsBlocked: form.subjectsBlocked,
         maxGroups: parseInt(form.maxGroups),
         motivation: form.motivation,
+        turnstileToken,
       }),
     })
 
@@ -176,6 +183,8 @@ export default function LärareRegistrera() {
             className="w-full rounded-lg border border-(--beige-dark) bg-white px-4 py-3 text-sm text-(--text-dark) focus:outline-none focus:ring-2 focus:ring-(--teal)"
           />
         </div>
+
+        <Turnstile onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
 
         {error && (
           <p className="rounded-lg bg-orange-50 px-4 py-3 text-sm text-(--accent-org)" role="alert">
