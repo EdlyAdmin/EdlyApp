@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --teal:       #1e6b74;
+  --teal-mid:   #2d8a94;
+  --teal-light: #d6eef0;
+  --beige:      #f2ede0;
+  --beige-dark: #e8e0cc;
+  --text-dark:  #1a2e2f;
+  --text-mid:   #3d5a5c;
+  --accent-yel: #f0c040;
+  --accent-grn: #7bc67e;
+  --accent-org: #e8956d;
+}
+
+@theme inline {
+  --color-teal:       var(--teal);
+  --color-teal-mid:   var(--teal-mid);
+  --color-teal-light: var(--teal-light);
+  --color-beige:      var(--beige);
+  --color-beige-dark: var(--beige-dark);
+  --color-text-dark:  var(--text-dark);
+  --color-text-mid:   var(--text-mid);
+}
+
+body {
+  background-color: var(--beige);
+  color: var(--text-dark);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Tillgänglighet: tydlig fokusindikator */
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
