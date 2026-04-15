@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (familyError || !family) {
-    return NextResponse.json({ error: 'Kunde inte skapa familjekonto.' }, { status: 500 })
+    return NextResponse.json({ error: `Kunde inte skapa familjekonto: ${familyError?.message}` }, { status: 500 })
   }
 
   // Skapa child
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (childError || !child) {
-    return NextResponse.json({ error: 'Kunde inte skapa barnprofil.' }, { status: 500 })
+    return NextResponse.json({ error: `Kunde inte skapa barnprofil: ${childError?.message}` }, { status: 500 })
   }
 
   // Logga samtycke

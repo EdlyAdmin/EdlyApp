@@ -53,7 +53,7 @@ export default function Home() {
 
         {/* Admin — dold länk */}
         <div className="mt-4">
-          <Link href="/admin/logga-in" className="text-xs text-(--beige-dark) hover:text-(--text-mid)">
+          <Link href="/admin/logga-in" className="text-xs text-(--text-mid) opacity-30 hover:opacity-100 transition-opacity">
             ●
           </Link>
         </div>
