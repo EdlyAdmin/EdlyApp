@@ -55,7 +55,7 @@ function calcAge(birthdate: string) {
 interface PendingProposal {
   id: string
   created_at: string
-  child: { age: number; subjects: Subject[]; diagnoses: string[] }
+  child: { birthdate: string; subjects: Subject[]; diagnoses: string[] }
   teacher: { id: string; name: string; email: string }
 }
 
@@ -130,7 +130,7 @@ export default function AdminPage() {
 
       supabase
         .from('match_proposals')
-        .select('id, created_at, children(age, subjects, diagnoses), teachers(id, name, email)')
+        .select('id, created_at, children(birthdate, subjects, diagnoses), teachers(id, name, email)')
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
 
@@ -189,7 +189,7 @@ export default function AdminPage() {
     setPendingProposals((proposals.data ?? []).map((p: any) => ({
       id: p.id,
       created_at: p.created_at,
-      child: { age: p.children?.age, subjects: p.children?.subjects ?? [], diagnoses: p.children?.diagnoses ?? [] },
+      child: { birthdate: p.children?.birthdate, subjects: p.children?.subjects ?? [], diagnoses: p.children?.diagnoses ?? [] },
       teacher: p.teachers,
     })))
 
@@ -443,7 +443,7 @@ export default function AdminPage() {
                       <div className="mt-1">
                         <span className="text-sm font-bold text-gray-900">Barn: </span>
                         <span className="text-sm text-gray-700">
-                          {proposal.child.age} år · {(proposal.child.diagnoses ?? []).map(d => DIAGNOSIS_LABELS[d] ?? d).join(', ') || '—'}
+                          {proposal.child.birthdate ? calcAge(proposal.child.birthdate) : '?'} år · {(proposal.child.diagnoses ?? []).map(d => DIAGNOSIS_LABELS[d] ?? d).join(', ') || '—'}
                         </span>
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1">
