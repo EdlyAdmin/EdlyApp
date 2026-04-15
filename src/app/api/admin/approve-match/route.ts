@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Förslag hittades inte.' }, { status: 404 })
   }
 
-  const teacher = (Array.isArray(proposal.teachers) ? proposal.teachers[0] : proposal.teachers) as { name: string; email: string }
-  const child = (Array.isArray(proposal.children) ? proposal.children[0] : proposal.children) as { family_id: string; families: { parent_name: string; email: string } }
-  const family = child.families
+  const teacher = (Array.isArray(proposal.teachers) ? proposal.teachers[0] : proposal.teachers) as unknown as { name: string; email: string }
+  const child = (Array.isArray(proposal.children) ? proposal.children[0] : proposal.children) as unknown as { family_id: string; families: { parent_name: string; email: string } | { parent_name: string; email: string }[] }
+  const family = (Array.isArray(child.families) ? child.families[0] : child.families) as { parent_name: string; email: string }
 
   // Skapa en grupp för läraren
   const { data: group, error: groupError } = await service
