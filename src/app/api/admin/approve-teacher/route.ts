@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     .eq('id', teacherId)
     .single()
 
-  try { await sendTeacherWelcome(teacher.name, teacher.email) } catch (e) { console.error('sendTeacherWelcome failed', e) }
+  try { if (teacher) await sendTeacherWelcome(teacher.name, teacher.email) } catch (e) { console.error('sendTeacherWelcome failed', e) }
   try { await runMatching() } catch (e) { console.error('runMatching failed', e) }
 
   return NextResponse.json({ success: true })
