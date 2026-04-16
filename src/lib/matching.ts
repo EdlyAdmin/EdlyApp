@@ -28,7 +28,7 @@ export async function runMatching() {
   // Hämta alla barn (FCFS-ordning) inklusive family_id för group_members
   const { data: allChildren } = await supabase
     .from('children')
-    .select('id, subjects, birthdate, family_id')
+    .select('id, subjects, birthdate')
     .order('created_at', { ascending: true })
 
   if (!allChildren?.length) return
@@ -120,7 +120,6 @@ export async function runMatching() {
       const { error } = await supabase.from('group_members').insert({
         group_id: existingGroup.id,
         child_id: child.id,
-        family_id: child.family_id,
       })
 
       if (!error) {
@@ -143,7 +142,6 @@ export async function runMatching() {
         const { error: memberError } = await supabase.from('group_members').insert({
           group_id: group.id,
           child_id: child.id,
-          family_id: child.family_id,
         })
 
         if (!memberError) {
