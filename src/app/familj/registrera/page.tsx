@@ -45,13 +45,8 @@ export default function FamiljRegistrera() {
     extraInfo: '',
   })
 
-  function toggleSubject(subject: Subject) {
-    setForm(f => ({
-      ...f,
-      subjects: f.subjects.includes(subject)
-        ? f.subjects.filter(s => s !== subject)
-        : [...f.subjects, subject],
-    }))
+  function selectSubject(subject: Subject) {
+    setForm(f => ({ ...f, subjects: [subject] }))
   }
 
   function toggleDiagnosis(value: string) {
@@ -70,7 +65,7 @@ export default function FamiljRegistrera() {
     if (!memberConsent) { setError('Du behöver godkänna medlemskapet för ditt barn.'); return }
     if (!consent) { setError('Du behöver godkänna dataskyddspolicyn.'); return }
     if (!turnstileToken) { setError('Vänligen bekräfta att du inte är en robot.'); return }
-    if (form.subjects.length === 0) { setError('Välj minst ett ämne.'); return }
+    if (form.subjects.length === 0) { setError('Välj ett ämne.'); return }
     if (form.diagnoses.includes('annat') && !form.diagnosisOther.trim()) {
       setError('Beskriv gärna vad du menar med "Annat".'); return
     }
@@ -146,7 +141,7 @@ export default function FamiljRegistrera() {
               <button
                 key={s.value}
                 type="button"
-                onClick={() => toggleSubject(s.value)}
+                onClick={() => selectSubject(s.value)}
                 className={`rounded-lg border-2 px-4 py-2 text-sm font-semibold transition-colors min-h-[44px] ${
                   form.subjects.includes(s.value)
                     ? 'border-(--teal) bg-(--teal) text-white'
@@ -157,6 +152,7 @@ export default function FamiljRegistrera() {
               </button>
             ))}
           </div>
+          <p className="mt-2 text-xs text-(--text-mid)">Välj ett ämne. Vill barnet ha hjälp i flera ämnen registreras ett barn per ämne.</p>
         </fieldset>
 
         <fieldset>
