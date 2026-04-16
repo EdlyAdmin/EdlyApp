@@ -185,14 +185,14 @@ export default function AdminPage() {
         .limit(20),
     ])
 
-    // Räkna aktiva grupper per lärare (forming + full + active)
-    const { data: allGroups } = await supabase
+    // Räkna endast aktiva grupper per lärare för visning
+    const { data: activeGroupsForCount } = await supabase
       .from('groups')
       .select('teacher_id')
-      .in('status', ['forming', 'full', 'active'])
+      .eq('status', 'active')
 
     const groupCount: Record<string, number> = {}
-    for (const g of allGroups ?? []) {
+    for (const g of activeGroupsForCount ?? []) {
       groupCount[g.teacher_id] = (groupCount[g.teacher_id] ?? 0) + 1
     }
 
