@@ -12,8 +12,8 @@ export default function Nekad() {
         </p>
         <p className="text-sm text-(--text-mid)">
           Frågor? Hör av dig till{' '}
-          <a href="mailto:info@edly.se" className="text-(--teal) underline">
-            info@edly.se
+          <a href="mailto:johan@edly.se" className="text-(--teal) underline">
+            johan@edly.se
           </a>
         </p>
       </div>

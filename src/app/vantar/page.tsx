@@ -12,8 +12,8 @@ export default function Väntar() {
         </p>
         <p className="text-sm text-(--text-mid)">
           Har du frågor? Kontakta oss på{' '}
-          <a href="mailto:info@edly.se" className="text-(--teal) underline">
-            info@edly.se
+          <a href="mailto:johan@edly.se" className="text-(--teal) underline">
+            johan@edly.se
           </a>
         </p>
       </div>

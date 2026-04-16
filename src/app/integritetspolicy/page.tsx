@@ -16,7 +16,7 @@ export default function Integritetspolicy() {
             <h2 className="text-lg font-bold text-(--teal)">1. Personuppgiftsansvarig</h2>
             <p className="text-sm text-(--text-dark) leading-relaxed">
               Edly är personuppgiftsansvarig för de uppgifter som behandlas inom tjänsten. Kontakta oss på{' '}
-              <a href="mailto:info@edly.se" className="text-(--teal) underline">info@edly.se</a> vid frågor om hur vi hanterar dina uppgifter.
+              <a href="mailto:johan@edly.se" className="text-(--teal) underline">johan@edly.se</a> vid frågor om hur vi hanterar dina uppgifter.
             </p>
           </section>
 
@@ -83,7 +83,7 @@ export default function Integritetspolicy() {
             </ul>
             <p className="text-sm text-(--text-dark) leading-relaxed">
               Kontakta oss på{' '}
-              <a href="mailto:info@edly.se" className="text-(--teal) underline">info@edly.se</a>{' '}
+              <a href="mailto:johan@edly.se" className="text-(--teal) underline">johan@edly.se</a>{' '}
               för att utöva dina rättigheter.
             </p>
           </section>

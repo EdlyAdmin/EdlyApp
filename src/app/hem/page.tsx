@@ -406,8 +406,8 @@ export default function HemPage() {
             <p className="mb-1 text-sm font-bold text-gray-700">Frågor?</p>
             <p className="text-sm text-gray-500">
               Kontakta oss på{' '}
-              <a href="mailto:info@edly.se" className="text-(--teal) underline">
-                info@edly.se
+              <a href="mailto:johan@edly.se" className="text-(--teal) underline">
+                johan@edly.se
               </a>
             </p>
           </div>
