@@ -20,16 +20,15 @@ export async function POST(req: NextRequest) {
       id, teacher_id,
       teachers(name, email),
       group_members(
-        child_id, family_id,
+        child_id,
         children(name, families(parent_name, email))
       )
     `)
     .eq('id', groupId)
-    .eq('status', 'full')
     .single()
 
   if (groupError || !group) {
-    return NextResponse.json({ error: 'Gruppen hittades inte eller är inte full.' }, { status: 404 })
+    return NextResponse.json({ error: `Gruppen hittades inte (id: ${groupId}).` }, { status: 404 })
   }
 
   // Aktivera gruppen
