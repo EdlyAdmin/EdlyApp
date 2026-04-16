@@ -77,6 +77,7 @@ export default function AdminBarnPage() {
   const [error, setError] = useState<string | null>(null)
   const [availableGroups, setAvailableGroups] = useState<{ id: string; label: string }[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   // Redigeringsformulär
   const [editForm, setEditForm] = useState({
@@ -149,10 +150,26 @@ export default function AdminBarnPage() {
     setSelectedGroupId(groups[0]?.id ?? '')
   }
 
+  async function handleDeleteChild(childId: string) {
+    setActionLoading('delete')
+    setError(null)
+    const res = await fetch('/api/admin/delete-child', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ childId }),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) { setError(body.error ?? 'Något gick fel.'); setActionLoading(null); setConfirmDelete(false); return }
+    setActionLoading(null)
+    setConfirmDelete(false)
+    setSelected(null)
+    await fetchChildren()
+  }
+
   function openChild(c: Child) {
     setSelected(c)
     setEditing(false)
     setError(null)
+    setConfirmDelete(false)
     setSelectedGroupId('')
     setAvailableGroups([])
     if (!c.group_id) fetchAvailableGroups(c)
@@ -376,6 +393,35 @@ export default function AdminBarnPage() {
             <Button variant="secondary" className="w-full text-sm" onClick={() => setEditing(true)}>
               Redigera uppgifter
             </Button>
+
+            <hr className="border-gray-100" />
+
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="w-full rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+              >
+                Radera barn
+              </button>
+            ) : (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-3">
+                <p className="text-sm font-semibold text-red-700">Är du säker?</p>
+                <p className="text-xs text-red-600">
+                  Detta raderar <strong>{selected.name}</strong> och all tillhörande data permanent. Åtgärden kan inte ångras.
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="danger" className="flex-1 text-sm"
+                    loading={actionLoading === 'delete'}
+                    onClick={() => handleDeleteChild(selected.id)}>
+                    Ja, radera
+                  </Button>
+                  <Button variant="secondary" className="flex-1 text-sm"
+                    onClick={() => setConfirmDelete(false)}>
+                    Avbryt
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
