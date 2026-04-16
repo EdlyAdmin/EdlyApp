@@ -381,9 +381,6 @@ export default function AdminPage() {
             <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/barn'}>
               Alla barn
             </Button>
-            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/api/admin/export-members'}>
-              Exportera medlemmar
-            </Button>
             <Button variant="secondary" onClick={handleLogout} className="text-xs px-3 py-2 min-h-[36px]">
               Logga ut
             </Button>

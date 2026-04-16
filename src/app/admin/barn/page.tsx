@@ -252,9 +252,14 @@ export default function AdminBarnPage() {
             <h1 className="text-xl font-bold text-(--teal)">Edly — Alla barn</h1>
             <p className="text-sm text-(--teal-mid)">{children.length} registrerade barn</p>
           </div>
-          <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => router.push('/admin')}>
-            ← Tillbaka
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/api/admin/export-members'}>
+              Exportera
+            </Button>
+            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => router.push('/admin')}>
+              ← Tillbaka
+            </Button>
+          </div>
         </div>
       </header>
 
