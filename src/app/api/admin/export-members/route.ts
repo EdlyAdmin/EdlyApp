@@ -26,6 +26,7 @@ const DIAGNOSIS_LABELS: Record<string, string> = {
 }
 
 export async function GET() {
+  try {
   // Verifiera admin
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -135,4 +136,8 @@ export async function GET() {
       'Content-Disposition': `attachment; filename="edly-medlemmar-${today}.xlsx"`,
     },
   })
+  } catch (err: any) {
+    console.error('export-members error:', err)
+    return NextResponse.json({ error: err?.message ?? String(err) }, { status: 500 })
+  }
 }
