@@ -44,6 +44,7 @@ interface QueuedChild {
   family_name: string
   family_email: string
   child_name: string
+  queue_status: 'waiting' | 'forming'
 }
 
 function calcAge(birthdate: string) {
@@ -145,7 +146,7 @@ export default function AdminPage() {
 
       supabase
         .from('children')
-        .select('id, name, birthdate, subjects, diagnoses, diagnosis_other, extra_info, created_at, families(parent_name, email), group_members(id)')
+        .select('id, name, birthdate, subjects, diagnoses, diagnosis_other, extra_info, created_at, families(parent_name, email), group_members(id, groups(status))')
         .order('created_at', { ascending: true }),
 
       // Fullständiga grupper — väntar på admin-godkännande
@@ -203,22 +204,33 @@ export default function AdminPage() {
       active_groups: groupCount[t.id] ?? 0,
     })))
 
-    // Barn i kön = inte i någon grupp alls
+    // Barn i kön = ingen grupp alls, ELLER i en forming-grupp (väntar på matchpartner)
+    const toArr = (v: any) => !v ? [] : Array.isArray(v) ? v : [v]
     const queued = (children.data ?? []).filter((c: any) => {
-      return (c.group_members?.length ?? 0) === 0
+      const members = toArr(c.group_members)
+      if (members.length === 0) return true
+      const groupStatus = (Array.isArray(members[0].groups) ? members[0].groups[0] : members[0].groups)?.status
+      return groupStatus === 'forming'
     })
-    setQueuedChildren(queued.map((c: any) => ({
-      id: c.id,
-      child_name: c.name,
-      birthdate: c.birthdate,
-      subjects: c.subjects,
-      diagnoses: c.diagnoses ?? [],
-      diagnosis_other: c.diagnosis_other ?? null,
-      extra_info: c.extra_info ?? null,
-      created_at: c.created_at,
-      family_name: c.families?.parent_name ?? '—',
-      family_email: c.families?.email ?? '—',
-    })))
+    setQueuedChildren(queued.map((c: any) => {
+      const members = toArr(c.group_members)
+      const groupStatus = members.length > 0
+        ? (Array.isArray(members[0].groups) ? members[0].groups[0] : members[0].groups)?.status
+        : null
+      return {
+        id: c.id,
+        child_name: c.name,
+        birthdate: c.birthdate,
+        subjects: c.subjects,
+        diagnoses: c.diagnoses ?? [],
+        diagnosis_other: c.diagnosis_other ?? null,
+        extra_info: c.extra_info ?? null,
+        created_at: c.created_at,
+        family_name: c.families?.parent_name ?? '—',
+        family_email: c.families?.email ?? '—',
+        queue_status: groupStatus === 'forming' ? 'forming' : 'waiting',
+      }
+    }))
 
     // Fullständiga grupper
     setFullGroups((full.data ?? []).map((g: any) => {
@@ -458,6 +470,7 @@ export default function AdminPage() {
                     <th className="px-4 py-3 font-bold text-(--teal)">Ålder</th>
                     <th className="px-4 py-3 font-bold text-(--teal)">Ämnen</th>
                     <th className="px-4 py-3 font-bold text-(--teal)">Diagnos</th>
+                    <th className="px-4 py-3 font-bold text-(--teal)">Status</th>
                     <th className="px-4 py-3 font-bold text-(--teal)">I kön sedan</th>
                     <th className="px-4 py-3"></th>
                   </tr>
@@ -480,6 +493,12 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 py-3 text-gray-700">
                         {(c.diagnoses ?? []).map((d: string) => DIAGNOSIS_LABELS[d] ?? d).join(', ') || '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {c.queue_status === 'forming'
+                          ? <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Tilldelas grupp</span>
+                          : <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">Väntar</span>
+                        }
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-400">{formatDate(c.created_at)}</td>
                       <td className="px-4 py-3 text-right text-xs text-gray-400">Visa →</td>
