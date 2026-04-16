@@ -61,18 +61,19 @@ export async function runMatching() {
     groupCountByTeacher[g.teacher_id] = (groupCountByTeacher[g.teacher_id] ?? 0) + 1
   }
 
-  // Hämta forming-grupper med nuvarande antal barn
+  // Hämta forming-grupper med nuvarande antal barn och ämne
   const { data: formingGroups } = await supabase
     .from('groups')
-    .select('id, teacher_id, group_members(child_id)')
+    .select('id, teacher_id, subject, group_members(child_id)')
     .eq('status', 'forming')
 
-  // Karta: teacher_id → forming-grupp med lediga platser
-  const formingByTeacher: Record<string, { id: string; memberCount: number }> = {}
+  // Karta: `${teacher_id}:${subject}` → forming-grupp med lediga platser
+  // En lärare kan ha separata forming-grupper per ämne
+  const formingByKey: Record<string, { id: string; memberCount: number }> = {}
   for (const g of formingGroups ?? []) {
     const memberCount = Array.isArray(g.group_members) ? g.group_members.length : 0
-    if (memberCount < 2) {
-      formingByTeacher[g.teacher_id] = { id: g.id, memberCount }
+    if (memberCount < 2 && g.subject) {
+      formingByKey[`${g.teacher_id}:${g.subject}`] = { id: g.id, memberCount }
     }
   }
 
@@ -102,8 +103,11 @@ export async function runMatching() {
 
     if (!eligibleTeachers.length) continue
 
-    // Prioritera lärare som redan har en forming-grupp med plats (fyller den)
-    const teachersWithSpace = eligibleTeachers.filter(t => formingByTeacher[t.id])
+    // Barnets ämne (alltid ett ämne)
+    const childSubject = childSubjects[0]
+
+    // Prioritera lärare som redan har en forming-grupp för samma ämne (fyller den)
+    const teachersWithSpace = eligibleTeachers.filter(t => formingByKey[`${t.id}:${childSubject}`])
     const candidates = teachersWithSpace.length > 0 ? teachersWithSpace : eligibleTeachers
 
     // Välj minst belastad bland kandidaterna
@@ -113,10 +117,11 @@ export async function runMatching() {
       return thisLoad < bestLoad ? teacher : best
     })
 
-    const existingGroup = formingByTeacher[match.id]
+    const groupKey = `${match.id}:${childSubject}`
+    const existingGroup = formingByKey[groupKey]
 
     if (existingGroup) {
-      // Lägg till barn i befintlig forming-grupp
+      // Lägg till barn i befintlig forming-grupp (samma ämne)
       const { error } = await supabase.from('group_members').insert({
         group_id: existingGroup.id,
         child_id: child.id,
@@ -127,14 +132,14 @@ export async function runMatching() {
         if (existingGroup.memberCount >= 2) {
           // Gruppen är full — väntar på admin-godkännande
           await supabase.from('groups').update({ status: 'full' }).eq('id', existingGroup.id)
-          delete formingByTeacher[match.id]
+          delete formingByKey[groupKey]
         }
       }
     } else {
-      // Skapa ny forming-grupp
+      // Skapa ny forming-grupp för detta ämne
       const { data: group, error: groupError } = await supabase
         .from('groups')
-        .insert({ teacher_id: match.id, status: 'forming' })
+        .insert({ teacher_id: match.id, status: 'forming', subject: childSubject })
         .select('id')
         .single()
 
@@ -145,7 +150,7 @@ export async function runMatching() {
         })
 
         if (!memberError) {
-          formingByTeacher[match.id] = { id: group.id, memberCount: 1 }
+          formingByKey[groupKey] = { id: group.id, memberCount: 1 }
           newGroupsThisRun[match.id] = (newGroupsThisRun[match.id] ?? 0) + 1
         }
       }
