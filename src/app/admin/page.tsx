@@ -636,10 +636,22 @@ export default function AdminPage() {
                       <div className="mt-3 space-y-2">
                         <p className="text-xs text-gray-400">{g.teacher?.email}</p>
                         {g.children.map((child, i) => (
-                          <div key={child.child_id} className="rounded-lg bg-gray-50 px-4 py-2">
-                            <p className="text-xs font-bold uppercase text-gray-400 mb-0.5">Barn {i + 1}</p>
-                            <p className="text-sm font-medium text-gray-900">{child.child_name} · {child.birthdate ? calcAge(child.birthdate) : '?'} år</p>
-                            <p className="text-xs text-gray-500">{child.parent_name} — <a href={`mailto:${child.parent_email}`} className="text-(--teal)">{child.parent_email}</a></p>
+                          <div key={child.child_id} className="rounded-lg bg-gray-50 px-4 py-2 flex items-center justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-bold uppercase text-gray-400 mb-0.5">Barn {i + 1}</p>
+                              <p className="text-sm font-medium text-gray-900">{child.child_name} · {child.birthdate ? calcAge(child.birthdate) : '?'} år</p>
+                              <p className="text-xs text-gray-500">{child.parent_name} — <a href={`mailto:${child.parent_email}`} className="text-(--teal)">{child.parent_email}</a></p>
+                            </div>
+                            <Button variant="danger" className="text-xs px-3 min-h-[32px] shrink-0"
+                              loading={actionLoading === `remove-${child.child_id}`}
+                              onClick={async () => {
+                                setActionLoading(`remove-${child.child_id}`)
+                                await fetch('/api/admin/remove-from-group', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ childId: child.child_id }) })
+                                setActionLoading(null)
+                                fetchData()
+                              }}>
+                              Sätt i kö
+                            </Button>
                           </div>
                         ))}
                       </div>
@@ -680,10 +692,22 @@ export default function AdminPage() {
                       <div className="mt-3 space-y-2">
                         <p className="text-xs text-gray-400">{g.teacher?.email}</p>
                         {g.children.map((child, i) => (
-                          <div key={child.child_id} className="rounded-lg bg-gray-50 px-4 py-2">
-                            <p className="text-xs font-bold uppercase text-gray-400 mb-0.5">Barn {i + 1}</p>
-                            <p className="text-sm font-medium text-gray-900">{child.child_name} · {child.birthdate ? calcAge(child.birthdate) : '?'} år</p>
-                            <p className="text-xs text-gray-500">{child.parent_name} — <a href={`mailto:${child.parent_email}`} className="text-(--teal)">{child.parent_email}</a></p>
+                          <div key={child.child_id} className="rounded-lg bg-gray-50 px-4 py-2 flex items-center justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-bold uppercase text-gray-400 mb-0.5">Barn {i + 1}</p>
+                              <p className="text-sm font-medium text-gray-900">{child.child_name} · {child.birthdate ? calcAge(child.birthdate) : '?'} år</p>
+                              <p className="text-xs text-gray-500">{child.parent_name} — <a href={`mailto:${child.parent_email}`} className="text-(--teal)">{child.parent_email}</a></p>
+                            </div>
+                            <Button variant="danger" className="text-xs px-3 min-h-[32px] shrink-0"
+                              loading={actionLoading === `remove-${child.child_id}`}
+                              onClick={async () => {
+                                setActionLoading(`remove-${child.child_id}`)
+                                await fetch('/api/admin/remove-from-group', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ childId: child.child_id }) })
+                                setActionLoading(null)
+                                fetchData()
+                              }}>
+                              Ta bort ur grupp
+                            </Button>
                           </div>
                         ))}
                       </div>
