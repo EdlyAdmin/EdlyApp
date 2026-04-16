@@ -8,11 +8,11 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ej autentiserad.' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Ej behörig.' }, { status: 403 })
-
   const { proposalId } = await req.json()
   const service = createServiceClient()
+
+  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Ej behörig.' }, { status: 403 })
 
   // Hämta förslaget med barn- och lärarinfo
   const { data: proposal, error: propError } = await service

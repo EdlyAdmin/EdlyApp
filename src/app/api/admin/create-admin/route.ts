@@ -7,13 +7,13 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ej autentiserad.' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Ej behörig.' }, { status: 403 })
-
   const { email, password } = await req.json()
   if (!email || !password) return NextResponse.json({ error: 'E-post och lösenord krävs.' }, { status: 400 })
 
   const service = createServiceClient()
+
+  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Ej behörig.' }, { status: 403 })
 
   // Skapa auth-användaren
   const { data: newUser, error: createError } = await service.auth.admin.createUser({
