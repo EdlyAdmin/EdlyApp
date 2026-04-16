@@ -15,6 +15,12 @@ const SUBJECTS: { value: Subject; label: string }[] = [
   { value: 'engelska', label: 'Engelska' },
 ]
 
+const AGE_GROUPS = [
+  { value: 'F-9', label: 'F–9 (6–9 år)' },
+  { value: '10-12', label: '10–12 år' },
+  { value: '13-15', label: '13–15 år' },
+]
+
 export default function LärareRegistrera() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -29,6 +35,7 @@ export default function LärareRegistrera() {
     password: '',
     subjectsCan: [] as Subject[],
     subjectsBlocked: [] as Subject[],
+    ageGroups: [] as string[],
     maxGroups: '2',
     motivation: '',
   })
@@ -62,6 +69,10 @@ export default function LärareRegistrera() {
       setError('Välj minst ett ämne du kan undervisa i.')
       return
     }
+    if (form.ageGroups.length === 0) {
+      setError('Välj minst en åldersgrupp du kan undervisa.')
+      return
+    }
     if (!turnstileToken) {
       setError('Vänligen bekräfta att du inte är en robot.')
       return
@@ -93,6 +104,7 @@ export default function LärareRegistrera() {
         subjectsCan: form.subjectsCan,
         subjectsBlocked: form.subjectsBlocked,
         maxGroups: parseInt(form.maxGroups),
+        ageGroups: form.ageGroups,
         motivation: form.motivation,
         turnstileToken,
       }),
@@ -129,6 +141,30 @@ export default function LärareRegistrera() {
                     : 'border-(--beige-dark) bg-white text-(--text-dark)'
                 }`}>
                 {s.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold text-(--text-dark)">
+            Vilka åldersgrupper kan du undervisa? <span className="text-(--accent-org)">*</span>
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {AGE_GROUPS.map(a => (
+              <button key={a.value} type="button"
+                onClick={() => setForm(f => ({
+                  ...f,
+                  ageGroups: f.ageGroups.includes(a.value)
+                    ? f.ageGroups.filter(g => g !== a.value)
+                    : [...f.ageGroups, a.value],
+                }))}
+                className={`rounded-lg border-2 px-4 py-2 text-sm font-semibold transition-colors min-h-[44px] ${
+                  form.ageGroups.includes(a.value)
+                    ? 'border-(--teal) bg-(--teal) text-white'
+                    : 'border-(--beige-dark) bg-white text-(--text-dark)'
+                }`}>
+                {a.label}
               </button>
             ))}
           </div>

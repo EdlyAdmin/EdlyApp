@@ -16,7 +16,7 @@ export async function runMatching() {
   // Hämta alla barn (FCFS-ordning)
   const { data: allChildren } = await supabase
     .from('children')
-    .select('id, subjects')
+    .select('id, subjects, birthdate')
     .order('created_at', { ascending: true })
 
   if (!allChildren?.length) return
@@ -42,7 +42,7 @@ export async function runMatching() {
   // Hämta godkända lärare
   const { data: teachers } = await supabase
     .from('teachers')
-    .select('id, subjects_can, subjects_blocked, max_groups')
+    .select('id, subjects_can, subjects_blocked, age_groups, max_groups')
     .eq('status', 'approved')
 
   if (!teachers?.length) return
@@ -74,15 +74,31 @@ export async function runMatching() {
   for (const child of unmatchedChildren) {
     const childSubjects = child.subjects as Subject[]
 
+    // Beräkna barnets åldersgrupp
+    const childAge = child.birthdate ? (() => {
+      const birth = new Date(child.birthdate)
+      const today = new Date()
+      let age = today.getFullYear() - birth.getFullYear()
+      if (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate())) age--
+      return age
+    })() : null
+
+    const childAgeGroup = childAge === null ? null
+      : childAge <= 9 ? 'F-9'
+      : childAge <= 12 ? '10-12'
+      : '13-15'
+
     // Hitta alla lärare som kan matcha detta barn
     const eligibleTeachers = teachers.filter(teacher => {
       const canTeach = childSubjects.some(s =>
         (teacher.subjects_can as Subject[]).includes(s) &&
         !(teacher.subjects_blocked as Subject[]).includes(s)
       )
+      const ageGroups = teacher.age_groups as string[]
+      const canTeachAge = !childAgeGroup || ageGroups.length === 0 || ageGroups.includes(childAgeGroup)
       const currentLoad = (groupCountByTeacher[teacher.id] ?? 0) + (proposalsCreated[teacher.id] ?? 0)
       const hasCapacity = currentLoad < teacher.max_groups
-      return canTeach && hasCapacity
+      return canTeach && canTeachAge && hasCapacity
     })
 
     if (!eligibleTeachers.length) continue

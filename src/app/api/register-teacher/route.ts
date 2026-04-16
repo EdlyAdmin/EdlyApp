@@ -14,7 +14,7 @@ async function verifyTurnstile(token: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId, name, email, phone, subjectsCan, subjectsBlocked, maxGroups, motivation, turnstileToken } = await req.json()
+  const { userId, name, email, phone, subjectsCan, subjectsBlocked, ageGroups, maxGroups, motivation, turnstileToken } = await req.json()
 
   if (!turnstileToken || !(await verifyTurnstile(turnstileToken))) {
     return NextResponse.json({ error: 'CAPTCHA-verifiering misslyckades.' }, { status: 400 })
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     phone: phone ?? null,
     subjects_can: subjectsCan as Subject[],
     subjects_blocked: subjectsBlocked as Subject[],
+    age_groups: ageGroups as string[],
     max_groups: maxGroups,
     motivation: motivation ?? null,
     status: 'pending',

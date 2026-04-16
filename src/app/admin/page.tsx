@@ -14,6 +14,7 @@ interface PendingTeacher {
   phone: string | null
   subjects_can: Subject[]
   subjects_blocked: Subject[]
+  age_groups: string[]
   max_groups: number
   motivation: string | null
   created_at: string
@@ -26,6 +27,7 @@ interface ApprovedTeacher {
   phone: string | null
   subjects_can: Subject[]
   subjects_blocked: Subject[]
+  age_groups: string[]
   max_groups: number
   motivation: string | null
   active_groups: number
@@ -113,13 +115,13 @@ export default function AdminPage() {
     const [pendingT, approvedT, children, proposals, matches, errors] = await Promise.all([
       supabase
         .from('teachers')
-        .select('id, name, email, phone, subjects_can, subjects_blocked, max_groups, motivation, created_at')
+        .select('id, name, email, phone, subjects_can, subjects_blocked, age_groups, max_groups, motivation, created_at')
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
 
       supabase
         .from('teachers')
-        .select('id, name, email, phone, subjects_can, subjects_blocked, max_groups, motivation')
+        .select('id, name, email, phone, subjects_can, subjects_blocked, age_groups, max_groups, motivation')
         .eq('status', 'approved')
         .order('name', { ascending: true }),
 
@@ -297,6 +299,11 @@ export default function AdminPage() {
                         ))}
                         {teacher.subjects_blocked.map(s => (
                           <span key={s} className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">Ej {SUBJECT_LABELS[s] ?? s}</span>
+                        ))}
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {(teacher.age_groups ?? []).map(a => (
+                          <span key={a} className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">{a}</span>
                         ))}
                       </div>
                       <p className="mt-1 text-xs text-gray-500">Max grupper: {teacher.max_groups}</p>
@@ -598,6 +605,14 @@ export default function AdminPage() {
                 ))}
                 {selectedTeacher.subjects_blocked.map(s => (
                   <span key={s} className="rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-700">Ej {SUBJECT_LABELS[s] ?? s}</span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase text-gray-400">Åldersgrupper</p>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {(selectedTeacher.age_groups ?? []).map(a => (
+                  <span key={a} className="rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-700">{a}</span>
                 ))}
               </div>
             </div>
