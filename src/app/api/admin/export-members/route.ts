@@ -31,30 +31,32 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ej autentiserad.' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const service = createServiceClient()
+  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Ej behörig.' }, { status: 403 })
 
-  const service = createServiceClient()
-
   // Hämta alla barn med familjeinfo och matchstatus
-  const { data: children } = await service
+  const { data: children, error: childrenError } = await service
     .from('children')
     .select(`
       id, name, birthdate, subjects, diagnoses, diagnosis_other,
       membership_consented_at, created_at,
       families(parent_name, email),
-      group_members(group_id),
-      match_proposals(status)
+      group_members(group_id)
     `)
     .order('created_at', { ascending: true })
 
-  // Hämta lärare för matchade barn
+  if (childrenError) {
+    return NextResponse.json({ error: childrenError.message }, { status: 500 })
+  }
+
+  // Hämta lärare och status för matchade barn
   const groupIds = (children ?? [])
     .flatMap((c: any) => c.group_members?.map((gm: any) => gm.group_id) ?? [])
     .filter(Boolean)
 
   const { data: groups } = groupIds.length
-    ? await service.from('groups').select('id, teacher_id').in('id', groupIds)
+    ? await service.from('groups').select('id, teacher_id, status').in('id', groupIds)
     : { data: [] }
 
   const teacherIds = [...new Set((groups ?? []).map((g: any) => g.teacher_id))]
@@ -65,22 +67,30 @@ export async function GET() {
   const teacherById: Record<string, string> = {}
   for (const t of teachers ?? []) teacherById[t.id] = t.name
 
-  const groupById: Record<string, string> = {}
-  for (const g of groups ?? []) groupById[g.id] = teacherById[g.teacher_id] ?? ''
+  const groupById: Record<string, { teacherName: string; status: string }> = {}
+  for (const g of groups ?? []) {
+    groupById[g.id] = { teacherName: teacherById[g.teacher_id] ?? '', status: g.status }
+  }
 
   // Bygg rader
   const rows = (children ?? []).map((c: any) => {
-    const proposals = Array.isArray(c.match_proposals) ? c.match_proposals : (c.match_proposals ? [c.match_proposals] : [])
     const members = Array.isArray(c.group_members) ? c.group_members : (c.group_members ? [c.group_members] : [])
 
     let status = 'I kön'
     let teacherName = ''
 
     if (members.length > 0) {
-      status = 'Matchad'
-      teacherName = groupById[members[0].group_id] ?? ''
-    } else if (proposals.some((p: any) => p.status === 'pending' || p.status === 'approved')) {
-      status = 'Under granskning'
+      const group = groupById[members[0].group_id]
+      if (group?.status === 'active') {
+        status = 'Aktiv'
+        teacherName = group.teacherName
+      } else if (group?.status === 'full') {
+        status = 'Inväntar godkännande'
+        teacherName = group.teacherName
+      } else if (group?.status === 'forming') {
+        status = 'Tilldelas grupp'
+        teacherName = group.teacherName
+      }
     }
 
     const diagnoses = (c.diagnoses ?? []).map((d: string) => DIAGNOSIS_LABELS[d] ?? d)
