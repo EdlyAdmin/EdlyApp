@@ -75,8 +75,9 @@ interface FullGroup {
 interface FormingGroup {
   id: string
   created_at: string
+  subject: string | null
   teacher: { name: string; email: string }
-  child_count: number
+  children: GroupChild[]
 }
 
 interface ActiveGroup {
@@ -166,7 +167,14 @@ export default function AdminPage() {
       // Grupper under uppbyggnad (1 barn, väntar på fler)
       supabase
         .from('groups')
-        .select('id, created_at, teachers(name, email), group_members(child_id)')
+        .select(`
+          id, created_at, subject,
+          teachers(name, email),
+          group_members(
+            child_id,
+            children(name, birthdate, subjects, diagnoses, families(parent_name, email))
+          )
+        `)
         .eq('status', 'forming')
         .order('created_at', { ascending: true }),
 
@@ -253,12 +261,24 @@ export default function AdminPage() {
     }))
 
     // Grupper under uppbyggnad
-    setFormingGroups((forming.data ?? []).map((g: any) => ({
-      id: g.id,
-      created_at: g.created_at,
-      teacher: Array.isArray(g.teachers) ? g.teachers[0] : g.teachers,
-      child_count: (g.group_members ?? []).length,
-    })))
+    setFormingGroups((forming.data ?? []).map((g: any) => {
+      const teacher = Array.isArray(g.teachers) ? g.teachers[0] : g.teachers
+      const members = Array.isArray(g.group_members) ? g.group_members : []
+      const groupChildren: GroupChild[] = members.map((m: any) => {
+        const child = Array.isArray(m.children) ? m.children[0] : m.children
+        const family = child ? (Array.isArray(child.families) ? child.families[0] : child.families) : null
+        return {
+          child_id: m.child_id,
+          child_name: child?.name ?? '—',
+          birthdate: child?.birthdate ?? '',
+          subjects: child?.subjects ?? [],
+          diagnoses: child?.diagnoses ?? [],
+          parent_name: family?.parent_name ?? '—',
+          parent_email: family?.email ?? '—',
+        }
+      })
+      return { id: g.id, created_at: g.created_at, subject: g.subject ?? null, teacher, children: groupChildren }
+    }))
 
     // Aktiva grupper
     setActiveGroups((active.data ?? []).map((g: any) => ({
@@ -568,16 +588,29 @@ export default function AdminPage() {
               Grupper under uppbyggnad
               <span className="ml-2 text-sm font-normal text-gray-500">({formingGroups.length} st)</span>
             </h2>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {formingGroups.map(g => (
                 <Card key={g.id}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{g.teacher?.name}</p>
-                      <p className="text-xs text-gray-400">{g.teacher?.email}</p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-bold text-gray-900">Lärare:</span>
+                        <span className="text-sm text-gray-700">{g.teacher?.name}</span>
+                        <span className="text-xs text-gray-400">{g.teacher?.email}</span>
+                        {g.subject && (
+                          <span className="rounded-full bg-(--teal-light) px-2 py-0.5 text-xs font-medium text-(--teal)">{SUBJECT_LABELS[g.subject] ?? g.subject}</span>
+                        )}
+                      </div>
+                      {g.children.map((child, i) => (
+                        <div key={child.child_id} className="rounded-lg bg-gray-50 px-4 py-2 mb-1">
+                          <p className="text-xs font-bold uppercase text-gray-400 mb-0.5">Barn {i + 1}</p>
+                          <p className="text-sm font-medium text-gray-900">{child.child_name} · {child.birthdate ? calcAge(child.birthdate) : '?'} år</p>
+                          <p className="text-xs text-gray-500">{child.parent_name} — <a href={`mailto:${child.parent_email}`} className="text-(--teal)">{child.parent_email}</a></p>
+                        </div>
+                      ))}
                     </div>
-                    <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">
-                      {g.child_count}/2 barn
+                    <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700 shrink-0">
+                      {g.children.length}/2 barn
                     </span>
                   </div>
                 </Card>
