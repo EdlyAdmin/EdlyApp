@@ -60,7 +60,7 @@ const DIAGNOSIS_LABELS: Record<string, string> = {
 
 function statusBadge(groupStatus: string | null) {
   if (!groupStatus || groupStatus === 'rejected') return <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">I kö</span>
-  if (groupStatus === 'forming') return <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Tilldelas grupp</span>
+  if (groupStatus === 'forming') return <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Tilldelad grupp</span>
   if (groupStatus === 'full') return <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-600">Inväntar godkännande</span>
   if (groupStatus === 'active') return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Aktiv</span>
   return null
@@ -75,7 +75,8 @@ export default function AdminBarnPage() {
   const [editing, setEditing] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [groupInput, setGroupInput] = useState('')
+  const [availableGroups, setAvailableGroups] = useState<{ id: string; label: string }[]>([])
+  const [selectedGroupId, setSelectedGroupId] = useState('')
 
   // Redigeringsformulär
   const [editForm, setEditForm] = useState({
@@ -123,11 +124,38 @@ export default function AdminBarnPage() {
 
   useEffect(() => { fetchChildren() }, [])
 
+  async function fetchAvailableGroups(child: Child) {
+    const childSubject = child.subjects[0]
+    // Hämta forming-grupper med plats, filtrera på barnets ämne
+    const { data } = await supabase
+      .from('groups')
+      .select('id, subject, teachers(name), group_members(child_id)')
+      .eq('status', 'forming')
+
+    const groups = (data ?? [])
+      .filter((g: any) => {
+        const memberCount = Array.isArray(g.group_members) ? g.group_members.length : 0
+        const subject = g.subject
+        return memberCount < 2 && (!subject || subject === childSubject)
+      })
+      .map((g: any) => {
+        const teacher = Array.isArray(g.teachers) ? g.teachers[0] : g.teachers
+        const count = Array.isArray(g.group_members) ? g.group_members.length : 0
+        const subjectLabel = SUBJECT_LABELS[g.subject] ?? g.subject ?? '?'
+        return { id: g.id, label: `${teacher?.name ?? '—'} — ${subjectLabel} (${count}/2 barn)` }
+      })
+
+    setAvailableGroups(groups)
+    setSelectedGroupId(groups[0]?.id ?? '')
+  }
+
   function openChild(c: Child) {
     setSelected(c)
     setEditing(false)
     setError(null)
-    setGroupInput('')
+    setSelectedGroupId('')
+    setAvailableGroups([])
+    if (!c.group_id) fetchAvailableGroups(c)
     setEditForm({
       name: c.name, birthdate: c.birthdate,
       subjects: c.subjects, diagnoses: c.diagnoses,
@@ -153,16 +181,17 @@ export default function AdminBarnPage() {
   }
 
   async function handleAddToGroup(childId: string) {
-    if (!groupInput.trim()) { setError('Ange ett grupp-ID.'); return }
+    if (!selectedGroupId) { setError('Välj en grupp.'); return }
     setActionLoading('add-group')
     setError(null)
     const res = await fetch('/api/admin/add-child-to-group', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ childId, groupId: groupInput.trim() }),
+      body: JSON.stringify({ childId, groupId: selectedGroupId }),
     })
     const body = await res.json().catch(() => ({}))
     if (!res.ok) { setError(body.error ?? 'Något gick fel.'); setActionLoading(null); return }
-    setGroupInput('')
+    setSelectedGroupId('')
+    setAvailableGroups([])
     setActionLoading(null)
     await fetchChildren()
   }
@@ -314,17 +343,25 @@ export default function AdminBarnPage() {
             {!selected.group_id && (
               <div>
                 <p className="text-xs font-bold uppercase text-gray-400 mb-2">Lägg i grupp manuellt</p>
-                <div className="flex gap-2">
-                  <input
-                    type="text" placeholder="Grupp-ID (UUID)"
-                    value={groupInput} onChange={e => setGroupInput(e.target.value)}
-                    className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-(--teal)"
-                  />
-                  <Button variant="primary" className="text-xs px-3 min-h-[36px]"
-                    loading={actionLoading === 'add-group'} onClick={() => handleAddToGroup(selected.id)}>
-                    Lägg till
-                  </Button>
-                </div>
+                {availableGroups.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">Inga lediga grupper för {SUBJECT_LABELS[selected.subjects[0]] ?? selected.subjects[0] ?? 'detta ämne'}.</p>
+                ) : (
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedGroupId}
+                      onChange={e => setSelectedGroupId(e.target.value)}
+                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-(--teal) bg-white"
+                    >
+                      {availableGroups.map(g => (
+                        <option key={g.id} value={g.id}>{g.label}</option>
+                      ))}
+                    </select>
+                    <Button variant="primary" className="text-xs px-3 min-h-[36px]"
+                      loading={actionLoading === 'add-group'} onClick={() => handleAddToGroup(selected.id)}>
+                      Lägg till
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 

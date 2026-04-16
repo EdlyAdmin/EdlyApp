@@ -545,7 +545,7 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 py-3">
                         {c.queue_status === 'forming'
-                          ? <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Tilldelas grupp</span>
+                          ? <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Tilldelad grupp</span>
                           : <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">Väntar</span>
                         }
                       </td>

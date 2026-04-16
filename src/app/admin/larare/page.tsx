@@ -46,7 +46,7 @@ function statusBadge(teacher: Teacher) {
   if (teacher.status === 'pending') return <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Väntar på granskning</span>
   if (teacher.status === 'rejected') return <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Nekad</span>
   if (teacher.active_groups > 0) return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Aktiv</span>
-  if (teacher.forming_groups > 0) return <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Tilldelas grupp</span>
+  if (teacher.forming_groups > 0) return <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Tilldelad grupp</span>
   return <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">Ingen grupp</span>
 }
 

@@ -92,7 +92,7 @@ export async function GET() {
         status = 'Inväntar godkännande'
         teacherName = group.teacherName
       } else if (group?.status === 'forming') {
-        status = 'Tilldelas grupp'
+        status = 'Tilldelad grupp'
         teacherName = group.teacherName
       }
     }
