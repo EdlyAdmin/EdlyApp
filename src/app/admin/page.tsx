@@ -314,6 +314,9 @@ export default function AdminPage() {
             <p className="text-sm text-(--teal-mid)">Hantera lärare och matchningar</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/larare'}>
+              Alla lärare
+            </Button>
             <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/barn'}>
               Alla barn
             </Button>
