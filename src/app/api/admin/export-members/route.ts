@@ -51,9 +51,12 @@ export async function GET() {
     return NextResponse.json({ error: childrenError.message }, { status: 500 })
   }
 
+  // Normalisera group_members till array (Supabase returnerar objekt vid enstaka rad)
+  const toArr = (v: any) => !v ? [] : Array.isArray(v) ? v : [v]
+
   // Hämta lärare och status för matchade barn
   const groupIds = (children ?? [])
-    .flatMap((c: any) => c.group_members?.map((gm: any) => gm.group_id) ?? [])
+    .flatMap((c: any) => toArr(c.group_members).map((gm: any) => gm.group_id))
     .filter(Boolean)
 
   const { data: groups } = groupIds.length
@@ -75,7 +78,7 @@ export async function GET() {
 
   // Bygg rader
   const rows = (children ?? []).map((c: any) => {
-    const members = Array.isArray(c.group_members) ? c.group_members : (c.group_members ? [c.group_members] : [])
+    const members = toArr(c.group_members)
 
     let status = 'I kön'
     let teacherName = ''
