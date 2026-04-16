@@ -176,6 +176,60 @@ export async function sendTeacherRejected(teacherName: string, teacherEmail: str
   if (error) await logMailError('rejected', teacherEmail, error.message)
 }
 
+export async function sendGroupApprovedMail(
+  teacherName: string,
+  teacherEmail: string,
+  parents: { name: string; email: string }[]
+) {
+  const parentRows = parents.map(p => ({
+    label: p.name,
+    value: `<a href="mailto:${p.email}" style="color:#1e6b74;">${p.email}</a>`,
+  }))
+
+  const sends = [
+    // Till läraren — båda föräldrarnas kontaktuppgifter
+    getResend().emails.send({
+      from: FROM,
+      to: teacherEmail,
+      subject: 'Edly — Din grupp är nu fullsatt och klar!',
+      html: emailWrapper(`
+        ${h2(`Hej ${teacherName}!`)}
+        ${p('Din undervisningsgrupp är nu godkänd och fullsatt med två barn. Här är föräldrarnas kontaktuppgifter:')}
+        ${infoBox(parentRows)}
+        ${p('Ta kontakt med familjeerna och kom överens om en tid för första träffen!')}
+        ${signoff()}
+      `),
+    }),
+    // Till varje förälder — lärarens kontaktuppgifter
+    ...parents.map(parent =>
+      getResend().emails.send({
+        from: FROM,
+        to: parent.email,
+        subject: 'Edly — Ditt barn har fått en lärare!',
+        html: emailWrapper(`
+          ${h2(`Hej ${parent.name}!`)}
+          ${p('Goda nyheter — ditt barn har matchats med en lärare på Edly och gruppen är nu redo att starta.')}
+          ${infoBox([
+            { label: 'Lärare', value: teacherName },
+            { label: 'E-post', value: `<a href="mailto:${teacherEmail}" style="color:#1e6b74;">${teacherEmail}</a>` },
+          ])}
+          ${p('Läraren kommer att höra av sig för att boka in en tid. Välkommen!')}
+          ${signoff()}
+        `),
+      })
+    ),
+  ]
+
+  const results = await Promise.allSettled(sends)
+
+  const recipients = [teacherEmail, ...parents.map(p => p.email)]
+  for (const [i, result] of results.entries()) {
+    if (result.status === 'rejected') {
+      await logMailError('group_approved', recipients[i] ?? 'unknown', String(result.reason))
+    }
+  }
+}
+
 export async function sendNewChildNotification(teachers: { email: string; name: string }[]) {
   await Promise.allSettled(
     teachers.map(t =>

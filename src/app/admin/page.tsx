@@ -54,18 +54,35 @@ function calcAge(birthdate: string) {
   return age
 }
 
-interface PendingProposal {
-  id: string
-  created_at: string
-  child: { birthdate: string; subjects: Subject[]; diagnoses: string[] }
-  teacher: { id: string; name: string; email: string }
+interface GroupChild {
+  child_id: string
+  child_name: string
+  birthdate: string
+  subjects: Subject[]
+  diagnoses: string[]
+  parent_name: string
+  parent_email: string
 }
 
-interface ApprovedMatch {
+interface FullGroup {
   id: string
   created_at: string
   teacher: { name: string; email: string }
-  group_members: { child_id: string }[]
+  children: GroupChild[]
+}
+
+interface FormingGroup {
+  id: string
+  created_at: string
+  teacher: { name: string; email: string }
+  child_count: number
+}
+
+interface ActiveGroup {
+  id: string
+  created_at: string
+  teacher: { name: string; email: string }
+  child_count: number
 }
 
 interface MailError {
@@ -95,8 +112,9 @@ export default function AdminPage() {
   const [pendingTeachers, setPendingTeachers] = useState<PendingTeacher[]>([])
   const [approvedTeachers, setApprovedTeachers] = useState<ApprovedTeacher[]>([])
   const [queuedChildren, setQueuedChildren] = useState<QueuedChild[]>([])
-  const [pendingProposals, setPendingProposals] = useState<PendingProposal[]>([])
-  const [approvedMatches, setApprovedMatches] = useState<ApprovedMatch[]>([])
+  const [fullGroups, setFullGroups] = useState<FullGroup[]>([])
+  const [formingGroups, setFormingGroups] = useState<FormingGroup[]>([])
+  const [activeGroups, setActiveGroups] = useState<ActiveGroup[]>([])
   const [mailErrors, setMailErrors] = useState<MailError[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -112,7 +130,7 @@ export default function AdminPage() {
   async function fetchData() {
     setLoading(true)
 
-    const [pendingT, approvedT, children, proposals, matches, errors] = await Promise.all([
+    const [pendingT, approvedT, children, full, forming, active, errors] = await Promise.all([
       supabase
         .from('teachers')
         .select('id, name, email, phone, subjects_can, subjects_blocked, age_groups, max_groups, motivation, created_at')
@@ -127,15 +145,31 @@ export default function AdminPage() {
 
       supabase
         .from('children')
-        .select('id, name, birthdate, subjects, diagnoses, diagnosis_other, extra_info, created_at, families(parent_name, email), group_members(id), match_proposals(status)')
+        .select('id, name, birthdate, subjects, diagnoses, diagnosis_other, extra_info, created_at, families(parent_name, email), group_members(id)')
         .order('created_at', { ascending: true }),
 
+      // Fullständiga grupper — väntar på admin-godkännande
       supabase
-        .from('match_proposals')
-        .select('id, created_at, children(birthdate, subjects, diagnoses), teachers(id, name, email)')
-        .eq('status', 'pending')
+        .from('groups')
+        .select(`
+          id, created_at,
+          teachers(name, email),
+          group_members(
+            child_id,
+            children(name, birthdate, subjects, diagnoses, families(parent_name, email))
+          )
+        `)
+        .eq('status', 'full')
         .order('created_at', { ascending: true }),
 
+      // Grupper under uppbyggnad (1 barn, väntar på fler)
+      supabase
+        .from('groups')
+        .select('id, created_at, teachers(name, email), group_members(child_id)')
+        .eq('status', 'forming')
+        .order('created_at', { ascending: true }),
+
+      // Aktiva godkända grupper
       supabase
         .from('groups')
         .select('id, created_at, teachers(name, email), group_members(child_id)')
@@ -151,14 +185,14 @@ export default function AdminPage() {
         .limit(20),
     ])
 
-    // Räkna aktiva grupper per lärare
-    const { data: activeGroups } = await supabase
+    // Räkna aktiva grupper per lärare (forming + full + active)
+    const { data: allGroups } = await supabase
       .from('groups')
       .select('teacher_id')
-      .eq('status', 'active')
+      .in('status', ['forming', 'full', 'active'])
 
     const groupCount: Record<string, number> = {}
-    for (const g of activeGroups ?? []) {
+    for (const g of allGroups ?? []) {
       groupCount[g.teacher_id] = (groupCount[g.teacher_id] ?? 0) + 1
     }
 
@@ -169,11 +203,9 @@ export default function AdminPage() {
       active_groups: groupCount[t.id] ?? 0,
     })))
 
+    // Barn i kön = inte i någon grupp alls
     const queued = (children.data ?? []).filter((c: any) => {
-      const inGroup = (c.group_members?.length ?? 0) > 0
-      const proposals = Array.isArray(c.match_proposals) ? c.match_proposals : (c.match_proposals ? [c.match_proposals] : [])
-      const hasActiveProposal = proposals.some((p: any) => p.status === 'pending' || p.status === 'approved')
-      return !inGroup && !hasActiveProposal
+      return (c.group_members?.length ?? 0) === 0
     })
     setQueuedChildren(queued.map((c: any) => ({
       id: c.id,
@@ -188,18 +220,40 @@ export default function AdminPage() {
       family_email: c.families?.email ?? '—',
     })))
 
-    setPendingProposals((proposals.data ?? []).map((p: any) => ({
-      id: p.id,
-      created_at: p.created_at,
-      child: { birthdate: p.children?.birthdate, subjects: p.children?.subjects ?? [], diagnoses: p.children?.diagnoses ?? [] },
-      teacher: p.teachers,
+    // Fullständiga grupper
+    setFullGroups((full.data ?? []).map((g: any) => {
+      const teacher = Array.isArray(g.teachers) ? g.teachers[0] : g.teachers
+      const members = Array.isArray(g.group_members) ? g.group_members : []
+      const groupChildren: GroupChild[] = members.map((m: any) => {
+        const child = Array.isArray(m.children) ? m.children[0] : m.children
+        const family = child ? (Array.isArray(child.families) ? child.families[0] : child.families) : null
+        return {
+          child_id: m.child_id,
+          child_name: child?.name ?? '—',
+          birthdate: child?.birthdate ?? '',
+          subjects: child?.subjects ?? [],
+          diagnoses: child?.diagnoses ?? [],
+          parent_name: family?.parent_name ?? '—',
+          parent_email: family?.email ?? '—',
+        }
+      })
+      return { id: g.id, created_at: g.created_at, teacher, children: groupChildren }
+    }))
+
+    // Grupper under uppbyggnad
+    setFormingGroups((forming.data ?? []).map((g: any) => ({
+      id: g.id,
+      created_at: g.created_at,
+      teacher: Array.isArray(g.teachers) ? g.teachers[0] : g.teachers,
+      child_count: (g.group_members ?? []).length,
     })))
 
-    setApprovedMatches((matches.data ?? []).map((m: any) => ({
-      id: m.id,
-      created_at: m.created_at,
-      teacher: m.teachers,
-      group_members: m.group_members ?? [],
+    // Aktiva grupper
+    setActiveGroups((active.data ?? []).map((g: any) => ({
+      id: g.id,
+      created_at: g.created_at,
+      teacher: Array.isArray(g.teachers) ? g.teachers[0] : g.teachers,
+      child_count: (g.group_members ?? []).length,
     })))
 
     setMailErrors((errors.data ?? []) as MailError[])
@@ -221,10 +275,15 @@ export default function AdminPage() {
     fetchData()
   }
 
-  async function handleProposalAction(proposalId: string, action: 'approve' | 'reject') {
-    setActionLoading(`proposal-${proposalId}-${action}`)
-    const endpoint = action === 'approve' ? '/api/admin/approve-match' : '/api/admin/reject-match'
-    await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proposalId }) })
+  async function handleGroupAction(groupId: string, action: 'approve' | 'reject') {
+    setActionLoading(`group-${groupId}-${action}`)
+    setActionError(null)
+    const endpoint = action === 'approve' ? '/api/admin/approve-group' : '/api/admin/reject-group'
+    const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ groupId }) })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      setActionError(body.error ?? `Något gick fel (${res.status})`)
+    }
     setActionLoading(null)
     fetchData()
   }
@@ -426,43 +485,49 @@ export default function AdminPage() {
           )}
         </section>
 
-        {/* Väntande matchningsförslag */}
+        {/* Fullständiga grupper — väntar på godkännande */}
         <section>
           <h2 className="mb-4 text-lg font-bold text-(--teal)">
-            Väntande matchningsförslag
-            {pendingProposals.length > 0 && (
-              <span className="ml-2 rounded-full bg-(--accent-org) px-2 py-0.5 text-xs text-white">{pendingProposals.length}</span>
+            Grupper att godkänna
+            {fullGroups.length > 0 && (
+              <span className="ml-2 rounded-full bg-(--accent-org) px-2 py-0.5 text-xs text-white">{fullGroups.length}</span>
             )}
           </h2>
-          {pendingProposals.length === 0 ? (
-            <Card><p className="text-sm text-gray-500">Inga väntande matchningsförslag.</p></Card>
+          {fullGroups.length === 0 ? (
+            <Card><p className="text-sm text-gray-500">Inga fullständiga grupper att godkänna.</p></Card>
           ) : (
             <div className="space-y-3">
-              {pendingProposals.map(proposal => (
-                <Card key={proposal.id}>
+              {fullGroups.map(group => (
+                <Card key={group.id}>
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-3">
                         <span className="text-sm font-bold text-gray-900">Lärare:</span>
-                        <span className="text-sm text-gray-700">{proposal.teacher?.name}</span>
-                        <span className="text-xs text-gray-400">{proposal.teacher?.email}</span>
+                        <span className="text-sm text-gray-700">{group.teacher?.name}</span>
+                        <span className="text-xs text-gray-400">{group.teacher?.email}</span>
                       </div>
-                      <div className="mt-1">
-                        <span className="text-sm font-bold text-gray-900">Barn: </span>
-                        <span className="text-sm text-gray-700">
-                          {proposal.child.birthdate ? calcAge(proposal.child.birthdate) : '?'} år · {(proposal.child.diagnoses ?? []).map(d => DIAGNOSIS_LABELS[d] ?? d).join(', ') || '—'}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {proposal.child.subjects.map(s => (
-                          <span key={s} className="rounded-full bg-(--teal-light) px-2 py-0.5 text-xs font-medium text-(--teal)">{SUBJECT_LABELS[s] ?? s}</span>
+                      <div className="space-y-3">
+                        {group.children.map((child, i) => (
+                          <div key={child.child_id} className="rounded-lg bg-gray-50 px-4 py-3">
+                            <p className="text-xs font-bold uppercase text-gray-400 mb-1">Barn {i + 1}</p>
+                            <p className="text-sm font-medium text-gray-900">{child.child_name} · {child.birthdate ? calcAge(child.birthdate) : '?'} år</p>
+                            <p className="text-xs text-gray-500">{child.parent_name} — <a href={`mailto:${child.parent_email}`} className="text-(--teal)">{child.parent_email}</a></p>
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {child.subjects.map(s => (
+                                <span key={s} className="rounded-full bg-(--teal-light) px-2 py-0.5 text-xs text-(--teal)">{SUBJECT_LABELS[s] ?? s}</span>
+                              ))}
+                              {child.diagnoses.map(d => (
+                                <span key={d} className="rounded-full bg-orange-50 px-2 py-0.5 text-xs text-orange-600">{DIAGNOSIS_LABELS[d] ?? d}</span>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
-                      <p className="mt-1 text-xs text-gray-400">Förslag skapades: {formatDate(proposal.created_at)}</p>
+                      <p className="mt-2 text-xs text-gray-400">Fullsatt: {formatDate(group.created_at)}</p>
                     </div>
                     <div className="flex gap-2 shrink-0">
-                      <Button variant="primary" className="text-sm px-4 min-h-[40px]" loading={actionLoading === `proposal-${proposal.id}-approve`} onClick={() => handleProposalAction(proposal.id, 'approve')}>Godkänn match</Button>
-                      <Button variant="danger" className="text-sm px-4 min-h-[40px]" loading={actionLoading === `proposal-${proposal.id}-reject`} onClick={() => handleProposalAction(proposal.id, 'reject')}>Avvisa</Button>
+                      <Button variant="primary" className="text-sm px-4 min-h-[40px]" loading={actionLoading === `group-${group.id}-approve`} onClick={() => handleGroupAction(group.id, 'approve')}>Godkänn grupp</Button>
+                      <Button variant="danger" className="text-sm px-4 min-h-[40px]" loading={actionLoading === `group-${group.id}-reject`} onClick={() => handleGroupAction(group.id, 'reject')}>Avvisa</Button>
                     </div>
                   </div>
                 </Card>
@@ -471,24 +536,48 @@ export default function AdminPage() {
           )}
         </section>
 
-        {/* Godkända matchningar */}
+        {/* Grupper under uppbyggnad */}
+        {formingGroups.length > 0 && (
+          <section>
+            <h2 className="mb-4 text-lg font-bold text-(--teal)">
+              Grupper under uppbyggnad
+              <span className="ml-2 text-sm font-normal text-gray-500">({formingGroups.length} st)</span>
+            </h2>
+            <div className="space-y-2">
+              {formingGroups.map(g => (
+                <Card key={g.id}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{g.teacher?.name}</p>
+                      <p className="text-xs text-gray-400">{g.teacher?.email}</p>
+                    </div>
+                    <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-700">
+                      {g.child_count}/2 barn
+                    </span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Aktiva godkända grupper */}
         <section>
-          <h2 className="mb-4 text-lg font-bold text-(--teal)">Senaste godkända matchningar</h2>
-          {approvedMatches.length === 0 ? (
-            <Card><p className="text-sm text-gray-500">Inga godkända matchningar ännu.</p></Card>
+          <h2 className="mb-4 text-lg font-bold text-(--teal)">Senaste aktiva grupper</h2>
+          {activeGroups.length === 0 ? (
+            <Card><p className="text-sm text-gray-500">Inga aktiva grupper ännu.</p></Card>
           ) : (
             <div className="space-y-3">
-              {approvedMatches.map(match => (
-                <Card key={match.id}>
+              {activeGroups.map(g => (
+                <Card key={g.id}>
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-bold text-gray-900">{match.teacher?.name}</p>
-                      <p className="text-xs text-gray-500">{match.teacher?.email}</p>
-                      <p className="mt-1 text-xs text-gray-400">Matchad: {formatDate(match.created_at)}</p>
-                      <p className="mt-1 font-mono text-xs text-gray-300">Grupp-ID: {match.id.slice(0, 8)}</p>
+                      <p className="text-sm font-bold text-gray-900">{g.teacher?.name}</p>
+                      <p className="text-xs text-gray-500">{g.teacher?.email}</p>
+                      <p className="mt-1 text-xs text-gray-400">Godkänd: {formatDate(g.created_at)}</p>
                     </div>
                     <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                      Aktiv · {(match.group_members ?? []).length} barn
+                      Aktiv · {g.child_count} barn
                     </span>
                   </div>
                 </Card>
