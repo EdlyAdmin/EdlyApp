@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   // Hitta barnets grupptillhörighet
   const { data: membership } = await service
     .from('group_members')
-    .select('group_id')
+    .select('group_id, groups(status)')
     .eq('child_id', childId)
     .single()
 
@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const groupId = membership.group_id
+  const groupStatus = (Array.isArray(membership.groups) ? membership.groups[0] : membership.groups)?.status
 
   // Ta bort barnet ur gruppen
   const { error: deleteError } = await service
@@ -35,7 +36,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Kunde inte ta bort barnet.' }, { status: 500 })
   }
 
-  // Kontrollera hur många barn som är kvar i gruppen
+  // Aktiva grupper behåller sin status även om ett barn tas bort
+  if (groupStatus === 'active') {
+    return NextResponse.json({ success: true })
+  }
+
+  // För forming/full: uppdatera status baserat på antal kvarvarande barn
   const { data: remaining } = await service
     .from('group_members')
     .select('child_id')
@@ -44,10 +50,8 @@ export async function POST(req: NextRequest) {
   const count = remaining?.length ?? 0
 
   if (count === 0) {
-    // Inga barn kvar — markera gruppen som avvisad
     await service.from('groups').update({ status: 'rejected' }).eq('id', groupId)
   } else {
-    // Barn kvar — sätt tillbaka till forming (väntar på fler)
     await service.from('groups').update({ status: 'forming' }).eq('id', groupId)
   }
 
