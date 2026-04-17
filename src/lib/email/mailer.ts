@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 
 const getResend = () => new Resend(process.env.RESEND_API_KEY)
 const FROM = 'Edly <admin@edly.se>'
+const EMAILS_DISABLED = process.env.DISABLE_EMAILS === 'true'
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'johan@edly.se'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
@@ -87,6 +88,7 @@ export async function sendIntroMail(
   teacherName: string, teacherEmail: string,
   parentName: string, parentEmail: string
 ) {
+  if (EMAILS_DISABLED) return
   const results = await Promise.allSettled([
     getResend().emails.send({
       from: FROM,
@@ -129,6 +131,7 @@ export async function sendIntroMail(
 }
 
 export async function sendTeacherNotifyToAdmin(teacherName: string, teacherEmail: string, subjectsCan: string[]) {
+  if (EMAILS_DISABLED) return
   const { error } = await getResend().emails.send({
     from: FROM,
     to: ADMIN_EMAIL,
@@ -147,6 +150,7 @@ export async function sendTeacherNotifyToAdmin(teacherName: string, teacherEmail
 }
 
 export async function sendTeacherWelcome(teacherName: string, teacherEmail: string) {
+  if (EMAILS_DISABLED) return
   const { error } = await getResend().emails.send({
     from: FROM,
     to: teacherEmail,
@@ -162,6 +166,7 @@ export async function sendTeacherWelcome(teacherName: string, teacherEmail: stri
 }
 
 export async function sendTeacherRejected(teacherName: string, teacherEmail: string) {
+  if (EMAILS_DISABLED) return
   const { error } = await getResend().emails.send({
     from: FROM,
     to: teacherEmail,
@@ -181,6 +186,7 @@ export async function sendGroupApprovedMail(
   teacherEmail: string,
   parents: { name: string; email: string }[]
 ) {
+  if (EMAILS_DISABLED) return
   const parentRows = parents.map(p => ({
     label: p.name,
     value: `<a href="mailto:${p.email}" style="color:#1e6b74;">${p.email}</a>`,
@@ -231,6 +237,7 @@ export async function sendGroupApprovedMail(
 }
 
 export async function sendNewChildNotification(teachers: { email: string; name: string }[]) {
+  if (EMAILS_DISABLED) return
   await Promise.allSettled(
     teachers.map(t =>
       getResend().emails.send({
