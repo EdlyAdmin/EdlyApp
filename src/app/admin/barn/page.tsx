@@ -78,6 +78,7 @@ export default function AdminBarnPage() {
   const [availableGroups, setAvailableGroups] = useState<{ id: string; label: string }[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [history, setHistory] = useState<{ teacher_name: string | null; subject: string | null; group_status: string; created_at: string }[]>([])
 
   // Redigeringsformulär
   const [editForm, setEditForm] = useState({
@@ -165,6 +166,15 @@ export default function AdminBarnPage() {
     await fetchChildren()
   }
 
+  async function fetchHistory(childId: string) {
+    const { data } = await supabase
+      .from('group_history')
+      .select('teacher_name, subject, group_status, created_at')
+      .eq('child_id', childId)
+      .order('created_at', { ascending: false })
+    setHistory(data ?? [])
+  }
+
   function openChild(c: Child) {
     setSelected(c)
     setEditing(false)
@@ -172,6 +182,8 @@ export default function AdminBarnPage() {
     setConfirmDelete(false)
     setSelectedGroupId('')
     setAvailableGroups([])
+    setHistory([])
+    fetchHistory(c.id)
     if (!c.group_id) fetchAvailableGroups(c)
     setEditForm({
       name: c.name, birthdate: c.birthdate,
@@ -398,6 +410,36 @@ export default function AdminBarnPage() {
             <Button variant="secondary" className="w-full text-sm" onClick={() => setEditing(true)}>
               Redigera uppgifter
             </Button>
+
+            {history.length > 0 && (
+              <div>
+                <p className="text-xs font-bold uppercase text-gray-400 mb-2">Grupphistorik</p>
+                <div className="space-y-2">
+                  {history.map((h, i) => (
+                    <div key={i} className="rounded-lg bg-gray-50 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm text-gray-900">{h.teacher_name ?? '—'}</p>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          h.group_status === 'active' ? 'bg-green-100 text-green-700'
+                          : h.group_status === 'forming' ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-600'
+                        }`}>
+                          {h.group_status === 'active' ? 'Aktiv'
+                            : h.group_status === 'forming' ? 'Under uppbyggnad'
+                            : h.group_status === 'full' ? 'Inväntar godkännande'
+                            : h.group_status === 'rejected' ? 'Avvisad'
+                            : 'Borttagen'}
+                        </span>
+                      </div>
+                      {h.subject && (
+                        <p className="text-xs text-gray-500 mt-0.5">{SUBJECT_LABELS[h.subject] ?? h.subject}</p>
+                      )}
+                      <p className="text-xs text-gray-400 mt-0.5">{new Date(h.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <hr className="border-gray-100" />
 

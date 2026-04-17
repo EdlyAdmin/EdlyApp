@@ -12,10 +12,10 @@ export async function POST(req: NextRequest) {
   const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Ej behörig.' }, { status: 403 })
 
-  // Hitta barnets grupptillhörighet
+  // Hämta barnets grupptillhörighet
   const { data: membership } = await service
     .from('group_members')
-    .select('group_id, groups(status)')
+    .select('group_id, groups(status, subject, teachers(name))')
     .eq('child_id', childId)
     .single()
 
@@ -24,7 +24,17 @@ export async function POST(req: NextRequest) {
   }
 
   const groupId = membership.group_id
-  const groupStatus = (Array.isArray(membership.groups) ? membership.groups[0] : membership.groups)?.status
+  const group = Array.isArray(membership.groups) ? membership.groups[0] : membership.groups
+  const groupStatus = group?.status
+  const teacher = group ? (Array.isArray((group as any).teachers) ? (group as any).teachers[0] : (group as any).teachers) : null
+
+  // Logga historik
+  await service.from('group_history').insert({
+    child_id: childId,
+    teacher_name: teacher?.name ?? null,
+    subject: group?.subject ?? null,
+    group_status: groupStatus ?? 'unknown',
+  })
 
   // Ta bort barnet ur gruppen
   const { error: deleteError } = await service
@@ -36,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Kunde inte ta bort barnet.' }, { status: 500 })
   }
 
-  // Aktiva grupper behåller sin status även om ett barn tas bort
+  // Aktiva grupper behåller sin status
   if (groupStatus === 'active') {
     return NextResponse.json({ success: true })
   }
