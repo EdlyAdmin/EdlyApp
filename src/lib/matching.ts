@@ -78,13 +78,8 @@ export async function runMatching() {
       const firstChild = firstMember
         ? (Array.isArray(firstMember.children) ? firstMember.children[0] : firstMember.children)
         : null
-      const firstAge = firstChild?.birthdate ? calcAge(firstChild.birthdate) : null
-      const firstAgeGroup = firstAge === null ? 'okänd'
-        : firstAge <= 9 ? 'F-9'
-        : firstAge <= 12 ? '10-12'
-        : '13-15'
       const firstDiagnosis = (firstChild?.diagnoses as string[])?.[0] ?? 'ingen'
-      formingByKey[`${g.teacher_id}:${g.subject}:${firstAgeGroup}:${firstDiagnosis}`] = { id: g.id, memberCount }
+      formingByKey[`${g.teacher_id}:${g.subject}:${firstDiagnosis}`] = { id: g.id, memberCount }
     }
   }
 
@@ -118,7 +113,7 @@ export async function runMatching() {
     const childSubject = childSubjects[0]
     const childDiagnosis = (child.diagnoses as string[])?.[0] ?? 'ingen'
     const groupKey = (teacherId: string) =>
-      `${teacherId}:${childSubject}:${childAgeGroup ?? 'okänd'}:${childDiagnosis}`
+      `${teacherId}:${childSubject}:${childDiagnosis}`
 
     // Prioritera lärare som redan har en forming-grupp för samma ämne, ålder och diagnos
     const teachersWithSpace = eligibleTeachers.filter(t => formingByKey[groupKey(t.id)])
