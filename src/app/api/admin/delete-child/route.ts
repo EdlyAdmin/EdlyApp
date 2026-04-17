@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const { error: deleteError } = await service.from('children').delete().eq('id', childId)
   if (deleteError) return NextResponse.json({ error: 'Kunde inte ta bort barnet.' }, { status: 500 })
 
-  // Ta bort familjen om inga fler barn finns kopplade
+  // Ta bort familjen och auth-användaren om inga fler barn finns kopplade
   if (child.family_id) {
     const { data: siblings } = await service
       .from('children')
@@ -36,7 +36,19 @@ export async function POST(req: NextRequest) {
       .eq('family_id', child.family_id)
 
     if (!siblings || siblings.length === 0) {
+      // Hämta user_id innan familjeposten raderas
+      const { data: family } = await service
+        .from('families')
+        .select('user_id')
+        .eq('id', child.family_id)
+        .single()
+
       await service.from('families').delete().eq('id', child.family_id)
+
+      // Radera auth-användaren om en sådan finns
+      if (family?.user_id) {
+        await service.auth.admin.deleteUser(family.user_id)
+      }
     }
   }
 
