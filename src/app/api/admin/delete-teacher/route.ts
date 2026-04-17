@@ -34,7 +34,10 @@ export async function POST(req: NextRequest) {
     }, { status: 409 })
   }
 
-  // Ta bort lärarposten (groups med rejected-status har RESTRICT men de är ok att lämna kvar)
+  // Radera avvisade/inaktiva grupper kopplade till läraren (ON DELETE RESTRICT blockerar annars)
+  await service.from('groups').delete().eq('teacher_id', teacherId).eq('status', 'rejected')
+
+  // Ta bort lärarposten
   const { error: teacherError } = await service
     .from('teachers')
     .delete()
