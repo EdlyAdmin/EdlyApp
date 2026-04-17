@@ -49,12 +49,11 @@ export default function FamiljRegistrera() {
     setForm(f => ({ ...f, subjects: [subject] }))
   }
 
-  function toggleDiagnosis(value: string) {
+  function selectDiagnosis(value: string) {
     setForm(f => ({
       ...f,
-      diagnoses: f.diagnoses.includes(value)
-        ? f.diagnoses.filter(d => d !== value)
-        : [...f.diagnoses, value],
+      diagnoses: [value],
+      diagnosisOther: value !== 'annat' ? '' : f.diagnosisOther,
     }))
   }
 
@@ -156,17 +155,19 @@ export default function FamiljRegistrera() {
         </fieldset>
 
         <fieldset>
-          <legend className="mb-2 text-sm font-semibold text-(--text-dark)">
-            Diagnos eller svårigheter <span className="text-xs font-normal text-(--text-mid)">(välj alla som stämmer)</span>
+          <legend className="mb-1 text-sm font-semibold text-(--text-dark)">
+            Primär diagnos eller svårighet
           </legend>
+          <p className="mb-3 text-xs text-(--text-mid)">Välj den diagnos eller svårighet som läraren framför allt behöver ta hänsyn till.</p>
           <div className="flex flex-col gap-2">
             {DIAGNOSES.map(d => (
               <label key={d.value} className="flex items-center gap-3 cursor-pointer">
                 <input
-                  type="checkbox"
+                  type="radio"
+                  name="diagnosis"
                   value={d.value}
-                  checked={form.diagnoses.includes(d.value)}
-                  onChange={() => toggleDiagnosis(d.value)}
+                  checked={form.diagnoses[0] === d.value}
+                  onChange={() => selectDiagnosis(d.value)}
                   className="h-4 w-4 accent-(--teal)"
                 />
                 <span className="text-sm text-(--text-dark)">{d.label}</span>
@@ -174,7 +175,7 @@ export default function FamiljRegistrera() {
             ))}
           </div>
 
-          {form.diagnoses.includes('annat') && (
+          {form.diagnoses[0] === 'annat' && (
             <div className="mt-3">
               <label className="mb-1 block text-sm font-medium text-(--text-dark)">
                 Beskriv vad du menar med "Annat" <span className="text-(--accent-org)">*</span>
