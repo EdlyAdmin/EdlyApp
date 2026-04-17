@@ -76,6 +76,7 @@ interface FormingGroup {
   id: string
   created_at: string
   subject: string | null
+  teacher_id: string
   teacher: { name: string; email: string }
   children: GroupChild[]
 }
@@ -84,6 +85,7 @@ interface ActiveGroup {
   id: string
   created_at: string
   subject: string | null
+  teacher_id: string
   teacher: { name: string; email: string }
   children: GroupChild[]
 }
@@ -111,6 +113,63 @@ const DIAGNOSIS_LABELS: Record<string, string> = {
   annat: 'Annat',
 }
 
+function ReassignTeacherUI({ group, reassign, onOpen, onClose, onSelect, onConfirm, actionLoading }: {
+  group: { id: string }
+  reassign: { groupId: string; available: { id: string; label: string }[]; selectedId: string; loading: boolean; noTeachers: boolean } | null
+  onOpen: () => void
+  onClose: () => void
+  onSelect: (id: string) => void
+  onConfirm: () => void
+  actionLoading: string | null
+}) {
+  const isOpen = reassign?.groupId === group.id
+
+  if (!isOpen) {
+    return (
+      <button onClick={onOpen} className="mt-1 text-xs text-orange-600 font-medium hover:underline">
+        Byt lärare
+      </button>
+    )
+  }
+
+  if (reassign!.loading) {
+    return <p className="text-xs text-gray-400 mt-2">Hämtar tillgängliga lärare…</p>
+  }
+
+  if (reassign!.noTeachers) {
+    return (
+      <div className="mt-2 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+        <p className="text-xs font-semibold text-orange-700">Ingen tillgänglig lärare</p>
+        <p className="text-xs text-orange-600 mt-1">Det finns inga godkända lärare med rätt ämne och ledig kapacitet just nu. Läraren kan inte bytas ut.</p>
+        <button onClick={onClose} className="mt-2 text-xs text-gray-500 hover:underline">Avbryt</button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
+      <p className="text-xs font-semibold text-gray-700">Välj ny lärare</p>
+      <div className="flex gap-2">
+        <select
+          value={reassign!.selectedId}
+          onChange={e => onSelect(e.target.value)}
+          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-(--teal)"
+        >
+          {reassign!.available.map(t => (
+            <option key={t.id} value={t.id}>{t.label}</option>
+          ))}
+        </select>
+        <Button variant="primary" className="text-xs px-3 min-h-[36px] shrink-0"
+          loading={actionLoading === `reassign-${group.id}`}
+          onClick={onConfirm}>
+          Bekräfta
+        </Button>
+        <button onClick={onClose} className="text-xs text-gray-500 hover:underline shrink-0">Avbryt</button>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminPage() {
   const [pendingTeachers, setPendingTeachers] = useState<PendingTeacher[]>([])
   const [approvedTeachers, setApprovedTeachers] = useState<ApprovedTeacher[]>([])
@@ -128,6 +187,72 @@ export default function AdminPage() {
   const [selectedTeacher, setSelectedTeacher] = useState<ApprovedTeacher | null>(null)
   const [selectedChild, setSelectedChild] = useState<QueuedChild | null>(null)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [reassign, setReassign] = useState<{
+    groupId: string
+    available: { id: string; label: string }[]
+    selectedId: string
+    loading: boolean
+    noTeachers: boolean
+  } | null>(null)
+
+  async function openReassign(group: FormingGroup | ActiveGroup) {
+    setReassign({ groupId: group.id, available: [], selectedId: '', loading: true, noTeachers: false })
+
+    // Hämta godkända lärare (exkl. nuvarande)
+    const { data: teachers } = await supabase
+      .from('teachers')
+      .select('id, name, subjects_can, subjects_blocked, max_groups')
+      .eq('status', 'approved')
+      .neq('id', group.teacher_id)
+
+    // Räkna gruppers per lärare
+    const { data: groups } = await supabase
+      .from('groups')
+      .select('teacher_id')
+      .in('status', ['forming', 'full', 'active'])
+      .neq('id', group.id)
+
+    const loadByTeacher: Record<string, number> = {}
+    for (const g of groups ?? []) {
+      loadByTeacher[g.teacher_id] = (loadByTeacher[g.teacher_id] ?? 0) + 1
+    }
+
+    const available = (teachers ?? [])
+      .filter((t: any) => {
+        const canTeach = !group.subject ||
+          ((t.subjects_can as string[]).includes(group.subject) &&
+           !(t.subjects_blocked as string[]).includes(group.subject))
+        const hasCapacity = (loadByTeacher[t.id] ?? 0) < t.max_groups
+        return canTeach && hasCapacity
+      })
+      .map((t: any) => ({
+        id: t.id,
+        label: `${t.name} (${loadByTeacher[t.id] ?? 0}/${t.max_groups} grupper)`,
+      }))
+
+    setReassign({
+      groupId: group.id,
+      available,
+      selectedId: available[0]?.id ?? '',
+      loading: false,
+      noTeachers: available.length === 0,
+    })
+  }
+
+  async function handleReassign() {
+    if (!reassign || !reassign.selectedId) return
+    setActionLoading(`reassign-${reassign.groupId}`)
+    const res = await fetch('/api/admin/reassign-teacher', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId: reassign.groupId, teacherId: reassign.selectedId }),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) setActionError(body.error ?? 'Något gick fel.')
+    setActionLoading(null)
+    setReassign(null)
+    fetchData()
+  }
 
   function toggleGroup(id: string) {
     setExpandedGroups(prev => {
@@ -178,7 +303,7 @@ export default function AdminPage() {
       supabase
         .from('groups')
         .select(`
-          id, created_at, subject,
+          id, created_at, subject, teacher_id,
           teachers(name, email),
           group_members(
             child_id,
@@ -192,7 +317,7 @@ export default function AdminPage() {
       supabase
         .from('groups')
         .select(`
-          id, created_at, subject,
+          id, created_at, subject, teacher_id,
           teachers(name, email),
           group_members(
             child_id,
@@ -294,7 +419,7 @@ export default function AdminPage() {
           parent_email: family?.email ?? '—',
         }
       })
-      return { id: g.id, created_at: g.created_at, subject: g.subject ?? null, teacher, children: groupChildren }
+      return { id: g.id, created_at: g.created_at, subject: g.subject ?? null, teacher_id: g.teacher_id, teacher, children: groupChildren }
     }))
 
     // Aktiva grupper
@@ -314,7 +439,7 @@ export default function AdminPage() {
           parent_email: family?.email ?? '—',
         }
       })
-      return { id: g.id, created_at: g.created_at, subject: g.subject ?? null, teacher, children: groupChildren }
+      return { id: g.id, created_at: g.created_at, subject: g.subject ?? null, teacher_id: g.teacher_id, teacher, children: groupChildren }
     }))
 
     setMailErrors((errors.data ?? []) as MailError[])
@@ -654,6 +779,7 @@ export default function AdminPage() {
                             </Button>
                           </div>
                         ))}
+                        <ReassignTeacherUI group={g} reassign={reassign} onOpen={() => openReassign(g)} onClose={() => setReassign(null)} onSelect={id => setReassign(r => r ? { ...r, selectedId: id } : r)} onConfirm={handleReassign} actionLoading={actionLoading} />
                       </div>
                     )}
                   </Card>
@@ -710,6 +836,7 @@ export default function AdminPage() {
                             </Button>
                           </div>
                         ))}
+                        <ReassignTeacherUI group={g} reassign={reassign} onOpen={() => openReassign(g)} onClose={() => setReassign(null)} onSelect={id => setReassign(r => r ? { ...r, selectedId: id } : r)} onConfirm={handleReassign} actionLoading={actionLoading} />
                       </div>
                     )}
                   </Card>
