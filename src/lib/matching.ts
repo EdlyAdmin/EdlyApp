@@ -42,11 +42,12 @@ export async function runMatching() {
   const unmatchedChildren = allChildren.filter(c => !matchedIds.has(c.id))
   if (!unmatchedChildren.length) return
 
-  // Godkända lärare
+  // Godkända och ej pausade lärare
   const { data: teachers } = await supabase
     .from('teachers')
     .select('id, subjects_can, subjects_blocked, age_groups, max_groups')
     .eq('status', 'approved')
+    .eq('paused', false)
 
   if (!teachers?.length) return
 

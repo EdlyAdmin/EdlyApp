@@ -21,6 +21,7 @@ interface Teacher {
   max_groups: number
   motivation: string | null
   status: 'pending' | 'approved' | 'rejected'
+  paused: boolean
   active_groups: number
   forming_groups: number
   created_at: string
@@ -45,6 +46,7 @@ const SUBJECT_LABELS: Record<string, string> = {
 function statusBadge(teacher: Teacher) {
   if (teacher.status === 'pending') return <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Väntar på granskning</span>
   if (teacher.status === 'rejected') return <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Nekad</span>
+  if (teacher.paused) return <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">Blockerad från matchning</span>
   if (teacher.active_groups > 0) return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Aktiv</span>
   if (teacher.forming_groups > 0) return <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Tilldelad grupp</span>
   return <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">Ingen grupp</span>
@@ -63,7 +65,7 @@ export default function AdminLararePage() {
   const [editForm, setEditForm] = useState({
     name: '', email: '', phone: '',
     subjectsCan: [] as Subject[], subjectsBlocked: [] as Subject[],
-    ageGroups: [] as string[], maxGroups: 2,
+    ageGroups: [] as string[], maxGroups: 2, paused: false,
   })
 
   const supabase = createClient()
@@ -72,7 +74,7 @@ export default function AdminLararePage() {
     setLoading(true)
     const { data: teacherData } = await supabase
       .from('teachers')
-      .select('id, name, email, phone, subjects_can, subjects_blocked, age_groups, max_groups, motivation, status, created_at')
+      .select('id, name, email, phone, subjects_can, subjects_blocked, age_groups, max_groups, motivation, status, paused, created_at')
       .order('created_at', { ascending: false })
 
     const { data: groupData } = await supabase
@@ -87,6 +89,7 @@ export default function AdminLararePage() {
 
     setTeachers((teacherData ?? []).map((t: any) => ({
       ...t,
+      paused: t.paused ?? false,
       active_groups: activeCount[t.id] ?? 0,
       forming_groups: formingCount[t.id] ?? 0,
     })))
@@ -102,7 +105,7 @@ export default function AdminLararePage() {
     setEditForm({
       name: t.name, email: t.email, phone: t.phone ?? '',
       subjectsCan: t.subjects_can, subjectsBlocked: t.subjects_blocked,
-      ageGroups: t.age_groups, maxGroups: t.max_groups,
+      ageGroups: t.age_groups, maxGroups: t.max_groups, paused: t.paused,
     })
   }
 
@@ -135,7 +138,7 @@ export default function AdminLararePage() {
     setError(null)
     const res = await fetch('/api/admin/update-teacher', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ teacherId: selected.id, ...editForm }),
+      body: JSON.stringify({ teacherId: selected.id, ...editForm, paused: editForm.paused }),
     })
     const body = await res.json().catch(() => ({}))
     if (!res.ok) { setError(body.error ?? 'Kunde inte spara.'); setActionLoading(false); return }
@@ -267,6 +270,10 @@ export default function AdminLararePage() {
             {selected.motivation && <div><p className="text-xs font-bold uppercase text-gray-400">Motivation</p><p className="mt-1 whitespace-pre-wrap text-sm text-gray-900">{selected.motivation}</p></div>}
             <div><p className="text-xs font-bold uppercase text-gray-400">Registrerad</p><p className="mt-1 text-gray-900">{formatDate(selected.created_at)}</p></div>
 
+            <div><p className="text-xs font-bold uppercase text-gray-400">Matchning</p>
+              <p className="mt-1 text-sm text-gray-900">{selected.paused ? '🚫 Blockerad från nya matchningar' : '✓ Tillgänglig för matchning'}</p>
+            </div>
+
             <Button variant="secondary" className="w-full text-sm mt-2" onClick={() => setEditing(true)}>
               Redigera uppgifter
             </Button>
@@ -335,6 +342,22 @@ export default function AdminLararePage() {
                 className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-(--teal)">
                 {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} {n === 1 ? 'grupp' : 'grupper'}</option>)}
               </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold uppercase text-gray-400 block mb-2">Matchning</label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editForm.paused}
+                  onChange={e => setEditForm(f => ({ ...f, paused: e.target.checked }))}
+                  className="h-4 w-4 accent-orange-500"
+                />
+                <span className="text-sm text-gray-700">Blockera från nya matchningar</span>
+              </label>
+              {editForm.paused && (
+                <p className="mt-1 text-xs text-orange-600">Läraren kommer inte tilldelas nya grupper vid matchning.</p>
+              )}
             </div>
 
             <div className="flex gap-2 pt-2">

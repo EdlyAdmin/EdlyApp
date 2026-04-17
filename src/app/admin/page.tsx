@@ -187,6 +187,22 @@ export default function AdminPage() {
   const [selectedTeacher, setSelectedTeacher] = useState<ApprovedTeacher | null>(null)
   const [selectedChild, setSelectedChild] = useState<QueuedChild | null>(null)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [confirmDeleteGroup, setConfirmDeleteGroup] = useState<string | null>(null)
+
+  async function handleDeleteGroup(groupId: string) {
+    setActionLoading(`delete-group-${groupId}`)
+    setActionError(null)
+    const res = await fetch('/api/admin/delete-group', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId }),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) setActionError(body.error ?? 'Något gick fel.')
+    setActionLoading(null)
+    setConfirmDeleteGroup(null)
+    fetchData()
+  }
+
   const [reassign, setReassign] = useState<{
     groupId: string
     available: { id: string; label: string }[]
@@ -780,6 +796,20 @@ export default function AdminPage() {
                           </div>
                         ))}
                         <ReassignTeacherUI group={g} reassign={reassign} onOpen={() => openReassign(g)} onClose={() => setReassign(null)} onSelect={id => setReassign(r => r ? { ...r, selectedId: id } : r)} onConfirm={handleReassign} actionLoading={actionLoading} />
+                        {confirmDeleteGroup === g.id ? (
+                          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 space-y-2">
+                            <p className="text-xs font-semibold text-red-700">Ta bort gruppen helt?</p>
+                            <p className="text-xs text-red-600">Barnen hamnar som inaktiva i kön. Läraren frigörs för nya matchningar.</p>
+                            <div className="flex gap-2">
+                              <Button variant="danger" className="text-xs px-3 min-h-[32px]" loading={actionLoading === `delete-group-${g.id}`} onClick={() => handleDeleteGroup(g.id)}>Ja, ta bort</Button>
+                              <button onClick={() => setConfirmDeleteGroup(null)} className="text-xs text-gray-500 hover:underline">Avbryt</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDeleteGroup(g.id)} className="text-xs text-red-500 font-medium hover:underline">
+                            Ta bort grupp
+                          </button>
+                        )}
                       </div>
                     )}
                   </Card>
@@ -837,6 +867,20 @@ export default function AdminPage() {
                           </div>
                         ))}
                         <ReassignTeacherUI group={g} reassign={reassign} onOpen={() => openReassign(g)} onClose={() => setReassign(null)} onSelect={id => setReassign(r => r ? { ...r, selectedId: id } : r)} onConfirm={handleReassign} actionLoading={actionLoading} />
+                        {confirmDeleteGroup === g.id ? (
+                          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 space-y-2">
+                            <p className="text-xs font-semibold text-red-700">Ta bort gruppen helt?</p>
+                            <p className="text-xs text-red-600">Barnen hamnar som inaktiva i kön. Läraren frigörs för nya matchningar.</p>
+                            <div className="flex gap-2">
+                              <Button variant="danger" className="text-xs px-3 min-h-[32px]" loading={actionLoading === `delete-group-${g.id}`} onClick={() => handleDeleteGroup(g.id)}>Ja, ta bort</Button>
+                              <button onClick={() => setConfirmDeleteGroup(null)} className="text-xs text-gray-500 hover:underline">Avbryt</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDeleteGroup(g.id)} className="text-xs text-red-500 font-medium hover:underline">
+                            Ta bort grupp
+                          </button>
+                        )}
                       </div>
                     )}
                   </Card>

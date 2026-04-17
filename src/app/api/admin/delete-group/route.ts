@@ -6,24 +6,27 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ej autentiserad.' }, { status: 401 })
 
+  const { groupId } = await req.json()
   const service = createServiceClient()
+
   const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Ej behörig.' }, { status: 403 })
 
-  const { teacherId, name, email, phone, subjectsCan, subjectsBlocked, ageGroups, maxGroups, paused } = await req.json()
+  // Ta bort alla grupptillhörigheter — barnen hamnar automatiskt i kön
+  const { error: membersError } = await service
+    .from('group_members')
+    .delete()
+    .eq('group_id', groupId)
 
-  const { error } = await service.from('teachers').update({
-    name,
-    email,
-    phone: phone || null,
-    subjects_can: subjectsCan,
-    subjects_blocked: subjectsBlocked,
-    age_groups: ageGroups,
-    max_groups: maxGroups,
-    paused: paused ?? false,
-  }).eq('id', teacherId)
+  if (membersError) return NextResponse.json({ error: 'Kunde inte ta bort gruppmedlemmar.' }, { status: 500 })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Ta bort gruppen helt
+  const { error: groupError } = await service
+    .from('groups')
+    .delete()
+    .eq('id', groupId)
+
+  if (groupError) return NextResponse.json({ error: 'Kunde inte ta bort gruppen.' }, { status: 500 })
 
   return NextResponse.json({ success: true })
 }
