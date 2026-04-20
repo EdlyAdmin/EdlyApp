@@ -143,8 +143,12 @@ export async function POST(req: NextRequest) {
         continue
       }
 
-      // Acceptera fullständiga datum (ÅÅÅÅ-MM-DD), annars platshållare
-      const validBirthdate = /^\d{4}-\d{2}-\d{2}$/.test(birthdate) ? birthdate : '2000-01-01'
+      // Fullständigt datum → använd det, bara år (t.ex. "2026") → lägg till -01-01, annars platshållare
+      const validBirthdate = /^\d{4}-\d{2}-\d{2}$/.test(birthdate)
+        ? birthdate
+        : /^\d{4}$/.test(birthdate)
+          ? `${birthdate}-01-01`
+          : '2000-01-01'
 
       const { data: child, error: childErr } = await service.from('children').insert({
         name: childName,
