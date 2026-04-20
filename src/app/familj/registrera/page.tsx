@@ -36,6 +36,7 @@ export default function FamiljRegistrera() {
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
     password: '',
     childName: '',
     childBirthdate: '',
@@ -92,6 +93,7 @@ export default function FamiljRegistrera() {
         userId: authData.user.id,
         parentName: `${form.firstName.trim()} ${form.lastName.trim()}`,
         email: form.email,
+        phone: form.phone.trim() || null,
         childName: form.childName,
         childBirthdate: form.childBirthdate,
         subjects: form.subjects,
@@ -122,6 +124,7 @@ export default function FamiljRegistrera() {
         <Input label="Förnamn" value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} required />
         <Input label="Efternamn" value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} required />
         <Input label="E-postadress" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+        <Input label="Telefonnummer" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="070-000 00 00" />
         <Input label="Välj lösenord" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required minLength={8} />
 
         <div className="rounded-lg bg-(--teal-light) px-4 py-3">

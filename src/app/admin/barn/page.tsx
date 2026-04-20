@@ -21,6 +21,7 @@ interface Child {
   created_at: string
   parent_name: string
   parent_email: string
+  parent_phone: string | null
   group_id: string | null
   group_status: string | null
   teacher_name: string | null
@@ -95,7 +96,7 @@ export default function AdminBarnPage() {
       .from('children')
       .select(`
         id, name, birthdate, subjects, diagnoses, diagnosis_other, extra_info, created_at,
-        families(parent_name, email),
+        families(parent_name, email, phone),
         group_members(group_id, groups(id, status, teachers(name, email)))
       `)
       .order('created_at', { ascending: false })
@@ -114,7 +115,7 @@ export default function AdminBarnPage() {
         subjects: c.subjects ?? [], diagnoses: c.diagnoses ?? [],
         diagnosis_other: c.diagnosis_other ?? null, extra_info: c.extra_info ?? null,
         created_at: c.created_at,
-        parent_name: family?.parent_name ?? '—', parent_email: family?.email ?? '—',
+        parent_name: family?.parent_name ?? '—', parent_email: family?.email ?? '—', parent_phone: family?.phone ?? null,
         group_id: activeMember?.group_id ?? null,
         group_status: group?.status ?? null,
         teacher_name: teacher?.name ?? null,
@@ -367,7 +368,7 @@ export default function AdminBarnPage() {
               {selected.diagnosis_other && <p className="mt-1 text-sm text-gray-700">{selected.diagnosis_other}</p>}
             </div>
             {selected.extra_info && <div><p className="text-xs font-bold uppercase text-gray-400">Övrig info</p><p className="mt-1 whitespace-pre-wrap text-sm text-gray-900">{selected.extra_info}</p></div>}
-            <div><p className="text-xs font-bold uppercase text-gray-400">Förälder</p><p className="mt-1 text-gray-900">{selected.parent_name}</p><a href={`mailto:${selected.parent_email}`} className="text-sm text-(--teal) underline">{selected.parent_email}</a></div>
+            <div><p className="text-xs font-bold uppercase text-gray-400">Förälder</p><p className="mt-1 text-gray-900">{selected.parent_name}</p><a href={`mailto:${selected.parent_email}`} className="text-sm text-(--teal) underline">{selected.parent_email}</a>{selected.parent_phone && <p className="text-sm text-gray-700 mt-0.5">{selected.parent_phone}</p>}</div>
             <div><p className="text-xs font-bold uppercase text-gray-400">Status</p><div className="mt-1">{statusBadge(selected.group_status)}</div></div>
             {selected.teacher_name && <div><p className="text-xs font-bold uppercase text-gray-400">Lärare</p><p className="mt-1 text-gray-900">{selected.teacher_name}</p></div>}
 

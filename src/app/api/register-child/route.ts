@@ -15,7 +15,7 @@ async function verifyTurnstile(token: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId, parentName, email, childName, childBirthdate, subjects, diagnoses, diagnosisOther, extraInfo, turnstileToken } = await req.json()
+  const { userId, parentName, email, phone, childName, childBirthdate, subjects, diagnoses, diagnosisOther, extraInfo, turnstileToken } = await req.json()
 
   if (!turnstileToken || !(await verifyTurnstile(turnstileToken))) {
     return NextResponse.json({ error: 'CAPTCHA-verifiering misslyckades.' }, { status: 400 })
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   // Skapa family
   const { data: family, error: familyError } = await supabase
     .from('families')
-    .insert({ profile_id: userId, parent_name: parentName, email })
+    .insert({ profile_id: userId, parent_name: parentName, email, phone: phone ?? null })
     .select('id')
     .single()
 
