@@ -16,6 +16,24 @@ function parseStr(val: any): string {
   return val != null ? String(val).trim() : ''
 }
 
+// Normaliserar diagnos-strängar till systemets interna värden
+const DIAGNOSIS_ALIASES: Record<string, string> = {
+  sprakstorning: 'sprakstorning',
+  språkstörning: 'sprakstorning',
+  sprakstörning: 'sprakstorning',
+  add: 'adhd',
+  övrigt: 'annat',
+  ovrigt: 'annat',
+  if: 'annat',
+}
+
+function normalizeDiagnosis(raw: string): string {
+  const lower = raw.toLowerCase().trim()
+  // Ersätt svenska tecken för att matcha interna värden
+  const ascii = lower.replace(/å/g, 'a').replace(/ä/g, 'a').replace(/ö/g, 'o')
+  return DIAGNOSIS_ALIASES[lower] ?? DIAGNOSIS_ALIASES[ascii] ?? lower
+}
+
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
@@ -95,9 +113,9 @@ export async function POST(req: NextRequest) {
       const birthdate = parseStr(row['Födelsedatum (ÅÅÅÅ-MM-DD)']) || parseStr(row['Födelsedatum'])
       const subjectRaw = parseStr(row['Ämne']).toLowerCase()
       const subject = VALID_SUBJECTS.includes(subjectRaw) ? subjectRaw : null
-      const diagnosRaw = parseList(row['Diagnos']).map(d => d.toLowerCase())
+      const diagnosRaw = parseList(row['Diagnos']).map(normalizeDiagnosis)
       const diagnoses = diagnosRaw.filter(d => VALID_DIAGNOSES.includes(d))
-      const diagnosisOther = diagnosRaw.find(d => !VALID_DIAGNOSES.includes(d)) ? diagnosRaw.filter(d => !VALID_DIAGNOSES.includes(d)).join(', ') : null
+      const diagnosisOther = diagnosRaw.filter(d => !VALID_DIAGNOSES.includes(d)).join(', ') || null
       const extraInfo = parseStr(row['Övrig info']) || null
       const parentName = parseStr(row['Förälderns namn'])
       const parentEmail = parseStr(row['Förälderns e-post'])
@@ -125,9 +143,12 @@ export async function POST(req: NextRequest) {
         continue
       }
 
+      // Acceptera endast fullständiga datum (ÅÅÅÅ-MM-DD), annars null
+      const validBirthdate = /^\d{4}-\d{2}-\d{2}$/.test(birthdate) ? birthdate : null
+
       const { data: child, error: childErr } = await service.from('children').insert({
         name: childName,
-        birthdate: birthdate || null,
+        birthdate: validBirthdate,
         subjects: [subject],
         diagnoses,
         diagnosis_other: diagnosisOther,

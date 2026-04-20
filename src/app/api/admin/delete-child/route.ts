@@ -36,18 +36,18 @@ export async function POST(req: NextRequest) {
       .eq('family_id', child.family_id)
 
     if (!siblings || siblings.length === 0) {
-      // Hämta user_id innan familjeposten raderas
+      // Hämta profile_id innan familjeposten raderas
       const { data: family } = await service
         .from('families')
-        .select('user_id')
+        .select('profile_id')
         .eq('id', child.family_id)
         .single()
 
       await service.from('families').delete().eq('id', child.family_id)
 
-      // Radera auth-användaren om en sådan finns
-      if (family?.user_id) {
-        await service.auth.admin.deleteUser(family.user_id)
+      // Radera auth-användaren om en sådan finns (import-skapade familjer saknar profile_id)
+      if (family?.profile_id) {
+        await service.auth.admin.deleteUser(family.profile_id)
       }
     }
   }
