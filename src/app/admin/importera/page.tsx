@@ -7,18 +7,44 @@ import { Button } from '@/components/ui/Button'
 interface ChildSummary { teachersCreated: number; childrenCreated: number; groupsCreated: number }
 interface TeacherSummary { created: number; skipped: number }
 
+function DropZone({ file, onChange, accept = '.xlsx' }: { file: File | null; onChange: (f: File) => void; accept?: string }) {
+  const ref = useRef<HTMLInputElement>(null)
+  return (
+    <div
+      className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-8 cursor-pointer hover:border-(--teal) transition-colors"
+      onClick={() => ref.current?.click()}
+    >
+      <p className="text-sm text-gray-500">
+        {file ? <span className="font-medium text-gray-900">{file.name}</span> : <>Klicka för att välja Excel-fil (.xlsx)</>}
+      </p>
+      <input ref={ref} type="file" accept={accept} className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) onChange(f) }} />
+    </div>
+  )
+}
+
+function ErrorList({ errors }: { errors: string[] }) {
+  if (errors.length === 0) return <p className="text-sm text-green-700 font-medium">✓ Inga fel.</p>
+  return (
+    <div>
+      <p className="text-sm font-semibold text-orange-700 mb-2">{errors.length} varning{errors.length !== 1 ? 'ar' : ''}:</p>
+      <ul className="space-y-1">
+        {errors.map((e, i) => <li key={i} className="rounded-lg bg-orange-50 px-3 py-2 text-xs text-orange-700">{e}</li>)}
+      </ul>
+    </div>
+  )
+}
+
 export default function ImportPage() {
   const router = useRouter()
 
   // Barn-import
-  const barnFileRef = useRef<HTMLInputElement>(null)
   const [barnFile, setBarnFile] = useState<File | null>(null)
   const [barnLoading, setBarnLoading] = useState(false)
   const [barnResult, setBarnResult] = useState<{ summary: ChildSummary; errors: string[] } | null>(null)
   const [barnError, setBarnError] = useState<string | null>(null)
 
   // Lärare-import
-  const lararFileRef = useRef<HTMLInputElement>(null)
   const [lararFile, setLararFile] = useState<File | null>(null)
   const [lararLoading, setLararLoading] = useState(false)
   const [lararResult, setLararResult] = useState<{ summary: TeacherSummary; errors: string[] } | null>(null)
@@ -48,33 +74,6 @@ export default function ImportPage() {
     setLararLoading(false)
   }
 
-  function DropZone({ fileRef, file, onChange, accept = '.xlsx' }: { fileRef: React.RefObject<HTMLInputElement>; file: File | null; onChange: (f: File) => void; accept?: string }) {
-    return (
-      <div
-        className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-8 cursor-pointer hover:border-(--teal) transition-colors"
-        onClick={() => fileRef.current?.click()}
-      >
-        <p className="text-sm text-gray-500">
-          {file ? <span className="font-medium text-gray-900">{file.name}</span> : <>Klicka för att välja Excel-fil (.xlsx)</>}
-        </p>
-        <input ref={fileRef} type="file" accept={accept} className="hidden"
-          onChange={e => { const f = e.target.files?.[0]; if (f) onChange(f) }} />
-      </div>
-    )
-  }
-
-  function ErrorList({ errors }: { errors: string[] }) {
-    if (errors.length === 0) return <p className="text-sm text-green-700 font-medium">✓ Inga fel.</p>
-    return (
-      <div>
-        <p className="text-sm font-semibold text-orange-700 mb-2">{errors.length} varning{errors.length !== 1 ? 'ar' : ''}:</p>
-        <ul className="space-y-1">
-          {errors.map((e, i) => <li key={i} className="rounded-lg bg-orange-50 px-3 py-2 text-xs text-orange-700">{e}</li>)}
-        </ul>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-(--beige)">
       <header className="bg-white shadow-sm">
@@ -99,7 +98,7 @@ export default function ImportPage() {
               Läser kolumnerna: Namn, Telefon, E-post, Ämne. Befintliga lärare (samma e-post) hoppas över.
             </p>
           </div>
-          <DropZone fileRef={lararFileRef} file={lararFile} onChange={f => { setLararFile(f); setLararResult(null); setLararError(null) }} />
+          <DropZone file={lararFile} onChange={f => { setLararFile(f); setLararResult(null); setLararError(null) }} />
           {lararFile && <Button variant="primary" className="w-full" loading={lararLoading} onClick={handleLararImport}>Importera lärare</Button>}
           {lararError && <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{lararError}</div>}
           {lararResult && (
@@ -129,7 +128,7 @@ export default function ImportPage() {
               Inga e-postmeddelanden skickas.
             </p>
           </div>
-          <DropZone fileRef={barnFileRef} file={barnFile} onChange={f => { setBarnFile(f); setBarnResult(null); setBarnError(null) }} />
+          <DropZone file={barnFile} onChange={f => { setBarnFile(f); setBarnResult(null); setBarnError(null) }} />
           {barnFile && <Button variant="primary" className="w-full" loading={barnLoading} onClick={handleBarnImport}>Importera barn</Button>}
           {barnError && <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{barnError}</div>}
           {barnResult && (
