@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendTeacherWelcome } from '@/lib/email/mailer'
-import { runMatching } from '@/lib/matching'
 
 export async function POST(req: NextRequest) {
   // Verifiera admin
@@ -32,7 +31,6 @@ export async function POST(req: NextRequest) {
     .single()
 
   try { if (teacher) await sendTeacherWelcome(teacher.name, teacher.email) } catch (e) { console.error('sendTeacherWelcome failed', e) }
-  try { await runMatching() } catch (e) { console.error('runMatching failed', e) }
 
   return NextResponse.json({ success: true })
 }

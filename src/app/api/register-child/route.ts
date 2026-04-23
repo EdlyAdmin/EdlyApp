@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { runMatching } from '@/lib/matching'
 import { sendNewChildNotification } from '@/lib/email/mailer'
 import type { Subject } from '@/lib/supabase/types'
 
@@ -76,9 +75,6 @@ export async function POST(req: NextRequest) {
   if (matchingTeachers.length > 0) {
     await sendNewChildNotification(matchingTeachers)
   }
-
-  // Kör matchning
-  await runMatching()
 
   return NextResponse.json({ success: true })
 }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient, createClient } from '@/lib/supabase/server'
-import { runMatching } from '@/lib/matching'
 import type { Subject } from '@/lib/supabase/types'
 
 export async function POST(req: NextRequest) {
@@ -41,9 +40,6 @@ export async function POST(req: NextRequest) {
   if (childError) {
     return NextResponse.json({ error: 'Kunde inte lägga till barn.' }, { status: 500 })
   }
-
-  // Kör matchning
-  await runMatching()
 
   return NextResponse.json({ success: true })
 }

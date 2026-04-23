@@ -256,6 +256,22 @@ export default function AdminPage() {
   const [selectedChild, setSelectedChild] = useState<QueuedChild | null>(null)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [confirmDeleteGroup, setConfirmDeleteGroup] = useState<string | null>(null)
+  const [matchingLoading, setMatchingLoading] = useState(false)
+  const [matchingResult, setMatchingResult] = useState<string | null>(null)
+
+  async function handleRunMatching() {
+    setMatchingLoading(true)
+    setMatchingResult(null)
+    const res = await fetch('/api/admin/run-matching', { method: 'POST' })
+    const body = await res.json().catch(() => ({}))
+    if (res.ok) {
+      setMatchingResult(`✓ Matchning klar — ${body.groupsCreated ?? 0} nya grupper skapades.`)
+    } else {
+      setMatchingResult(`Något gick fel: ${body.error ?? 'okänt fel'}`)
+    }
+    setMatchingLoading(false)
+    fetchData()
+  }
 
   async function handleDeleteGroup(groupId: string) {
     setActionLoading(`delete-group-${groupId}`)
@@ -584,6 +600,14 @@ export default function AdminPage() {
             <p className="text-sm text-(--teal-mid)">Hantera lärare och matchningar</p>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="primary"
+              className="text-xs px-4 py-2 min-h-[36px]"
+              loading={matchingLoading}
+              onClick={handleRunMatching}
+            >
+              Kör matchning
+            </Button>
             <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/larare'}>
               Alla lärare
             </Button>
@@ -601,6 +625,12 @@ export default function AdminPage() {
       </header>
 
       <main className="mx-auto max-w-5xl space-y-10 px-6 py-8">
+
+        {matchingResult && (
+          <div className={`rounded-lg px-4 py-3 text-sm font-medium ${matchingResult.startsWith('✓') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+            {matchingResult}
+          </div>
+        )}
 
         {actionError && (
           <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
