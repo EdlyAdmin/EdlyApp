@@ -44,6 +44,8 @@ export default function FamiljRegistrera() {
     diagnoses: [] as string[],
     diagnosisOther: '',
     extraInfo: '',
+    sessionLength: '',
+    hasWebcam: null as boolean | null,
   })
 
   function selectSubject(subject: Subject) {
@@ -69,6 +71,8 @@ export default function FamiljRegistrera() {
     if (form.diagnoses.includes('annat') && !form.diagnosisOther.trim()) {
       setError('Beskriv gärna vad du menar med "Annat".'); return
     }
+    if (!form.sessionLength) { setError('Ange hur länge ditt barn klarar av att sitta i en videolektion.'); return }
+    if (form.hasWebcam === null) { setError('Ange om ni har tillgång till webbkamera.'); return }
 
     setLoading(true)
 
@@ -94,6 +98,8 @@ export default function FamiljRegistrera() {
         parentName: `${form.firstName.trim()} ${form.lastName.trim()}`,
         email: form.email,
         phone: form.phone.trim() || null,
+        sessionLength: form.sessionLength,
+        hasWebcam: form.hasWebcam,
         childName: form.childName,
         childBirthdate: form.childBirthdate,
         subjects: form.subjects,
@@ -209,6 +215,52 @@ export default function FamiljRegistrera() {
             className="w-full rounded-lg border border-(--beige-dark) bg-white px-4 py-3 text-sm text-(--text-dark) focus:outline-none focus:ring-2 focus:ring-(--teal)"
           />
         </div>
+
+        <fieldset>
+          <legend className="mb-1 text-sm font-semibold text-(--text-dark)">
+            Hur länge klarar ditt barn av att sitta i en videolektion? <span className="text-(--accent-org)">*</span>
+          </legend>
+          <div className="flex flex-col gap-2 mt-2">
+            {[
+              { value: '0-15', label: '0–15 minuter' },
+              { value: '15-30', label: '15–30 minuter' },
+              { value: '30-45', label: '30–45 minuter' },
+              { value: '45-60', label: '45–60 minuter' },
+            ].map(opt => (
+              <label key={opt.value} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="sessionLength"
+                  value={opt.value}
+                  checked={form.sessionLength === opt.value}
+                  onChange={() => setForm(f => ({ ...f, sessionLength: opt.value }))}
+                  className="h-4 w-4 accent-(--teal)"
+                />
+                <span className="text-sm text-(--text-dark)">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend className="mb-1 text-sm font-semibold text-(--text-dark)">
+            Har ni tillgång till webbkamera? <span className="text-(--accent-org)">*</span>
+          </legend>
+          <div className="flex gap-4 mt-2">
+            {[{ value: true, label: 'Ja' }, { value: false, label: 'Nej' }].map(opt => (
+              <label key={String(opt.value)} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="hasWebcam"
+                  checked={form.hasWebcam === opt.value}
+                  onChange={() => setForm(f => ({ ...f, hasWebcam: opt.value }))}
+                  className="h-4 w-4 accent-(--teal)"
+                />
+                <span className="text-sm text-(--text-dark)">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <div className="rounded-lg border border-(--beige-dark) bg-(--beige) p-4 space-y-1">
           <label className="flex items-start gap-3 cursor-pointer">

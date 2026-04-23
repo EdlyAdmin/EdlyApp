@@ -18,6 +18,9 @@ interface Child {
   diagnoses: string[]
   diagnosis_other: string | null
   extra_info: string | null
+  session_length: string | null
+  has_webcam: boolean | null
+  admin_notes: string | null
   created_at: string
   parent_name: string
   parent_email: string
@@ -80,6 +83,9 @@ export default function AdminBarnPage() {
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [history, setHistory] = useState<{ teacher_name: string | null; subject: string | null; group_status: string; created_at: string }[]>([])
+  const [adminNotes, setAdminNotes] = useState('')
+  const [notesSaving, setNotesSaving] = useState(false)
+  const [notesSaved, setNotesSaved] = useState(false)
 
   // Redigeringsformulär
   const [editForm, setEditForm] = useState({
@@ -95,7 +101,7 @@ export default function AdminBarnPage() {
     const { data } = await supabase
       .from('children')
       .select(`
-        id, name, birthdate, subjects, diagnoses, diagnosis_other, extra_info, created_at,
+        id, name, birthdate, subjects, diagnoses, diagnosis_other, extra_info, session_length, has_webcam, admin_notes, created_at,
         families(parent_name, email, phone),
         group_members(group_id, groups(id, status, teachers(name, email)))
       `)
@@ -114,6 +120,8 @@ export default function AdminBarnPage() {
         id: c.id, name: c.name, birthdate: c.birthdate,
         subjects: c.subjects ?? [], diagnoses: c.diagnoses ?? [],
         diagnosis_other: c.diagnosis_other ?? null, extra_info: c.extra_info ?? null,
+        session_length: c.session_length ?? null, has_webcam: c.has_webcam ?? null,
+        admin_notes: c.admin_notes ?? null,
         created_at: c.created_at,
         parent_name: family?.parent_name ?? '—', parent_email: family?.email ?? '—', parent_phone: family?.phone ?? null,
         group_id: activeMember?.group_id ?? null,
@@ -184,6 +192,8 @@ export default function AdminBarnPage() {
     setSelectedGroupId('')
     setAvailableGroups([])
     setHistory([])
+    setAdminNotes(c.admin_notes ?? '')
+    setNotesSaved(false)
     fetchHistory(c.id)
     if (!c.group_id) fetchAvailableGroups(c)
     setEditForm({
@@ -192,6 +202,15 @@ export default function AdminBarnPage() {
       diagnosisOther: c.diagnosis_other ?? '', extraInfo: c.extra_info ?? '',
       parentName: c.parent_name, parentEmail: c.parent_email,
     })
+  }
+
+  async function handleSaveNotes(childId: string) {
+    setNotesSaving(true)
+    await supabase.from('children').update({ admin_notes: adminNotes || null }).eq('id', childId)
+    setNotesSaving(false)
+    setNotesSaved(true)
+    setChildren(prev => prev.map(c => c.id === childId ? { ...c, admin_notes: adminNotes || null } : c))
+    if (selected?.id === childId) setSelected(s => s ? { ...s, admin_notes: adminNotes || null } : s)
   }
 
   async function handleRemove(childId: string) {
@@ -368,6 +387,18 @@ export default function AdminBarnPage() {
               {selected.diagnosis_other && <p className="mt-1 text-sm text-gray-700">{selected.diagnosis_other}</p>}
             </div>
             {selected.extra_info && <div><p className="text-xs font-bold uppercase text-gray-400">Övrig info</p><p className="mt-1 whitespace-pre-wrap text-sm text-gray-900">{selected.extra_info}</p></div>}
+            {selected.session_length && (
+              <div>
+                <p className="text-xs font-bold uppercase text-gray-400">Videolektion</p>
+                <p className="mt-1 text-sm text-gray-900">{selected.session_length} min</p>
+              </div>
+            )}
+            {selected.has_webcam !== null && (
+              <div>
+                <p className="text-xs font-bold uppercase text-gray-400">Webbkamera</p>
+                <p className="mt-1 text-sm text-gray-900">{selected.has_webcam ? 'Ja' : 'Nej'}</p>
+              </div>
+            )}
             <div><p className="text-xs font-bold uppercase text-gray-400">Förälder</p><p className="mt-1 text-gray-900">{selected.parent_name}</p><a href={`mailto:${selected.parent_email}`} className="text-sm text-(--teal) underline">{selected.parent_email}</a>{selected.parent_phone && <p className="text-sm text-gray-700 mt-0.5">{selected.parent_phone}</p>}</div>
             <div><p className="text-xs font-bold uppercase text-gray-400">Status</p><div className="mt-1">{statusBadge(selected.group_status)}</div></div>
             {selected.teacher_name && <div><p className="text-xs font-bold uppercase text-gray-400">Lärare</p><p className="mt-1 text-gray-900">{selected.teacher_name}</p></div>}
@@ -411,6 +442,28 @@ export default function AdminBarnPage() {
             <Button variant="secondary" className="w-full text-sm" onClick={() => setEditing(true)}>
               Redigera uppgifter
             </Button>
+
+            {/* Admin-noteringar */}
+            <div>
+              <p className="text-xs font-bold uppercase text-gray-400 mb-2">Intern notering</p>
+              <textarea
+                value={adminNotes}
+                onChange={e => { setAdminNotes(e.target.value); setNotesSaved(false) }}
+                rows={3}
+                placeholder="Skriv en intern notering om barnet…"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-(--teal) resize-none"
+              />
+              <div className="flex items-center justify-between mt-1.5">
+                <span className="text-xs text-gray-400">Syns bara för admin</span>
+                <button
+                  onClick={() => handleSaveNotes(selected.id)}
+                  disabled={notesSaving}
+                  className="text-xs font-medium text-(--teal) hover:underline disabled:opacity-50"
+                >
+                  {notesSaving ? 'Sparar…' : notesSaved ? '✓ Sparat' : 'Spara'}
+                </button>
+              </div>
+            </div>
 
             {history.length > 0 && (
               <div>

@@ -15,7 +15,7 @@ async function verifyTurnstile(token: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId, parentName, email, phone, childName, childBirthdate, subjects, diagnoses, diagnosisOther, extraInfo, turnstileToken } = await req.json()
+  const { userId, parentName, email, phone, childName, childBirthdate, subjects, diagnoses, diagnosisOther, extraInfo, sessionLength, hasWebcam, turnstileToken } = await req.json()
 
   if (!turnstileToken || !(await verifyTurnstile(turnstileToken))) {
     return NextResponse.json({ error: 'CAPTCHA-verifiering misslyckades.' }, { status: 400 })
@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
       diagnoses: diagnoses as string[],
       diagnosis_other: diagnosisOther || null,
       extra_info: extraInfo || null,
+      session_length: sessionLength || null,
+      has_webcam: hasWebcam ?? null,
     })
     .select('id')
     .single()
