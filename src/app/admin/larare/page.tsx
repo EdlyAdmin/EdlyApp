@@ -69,6 +69,8 @@ export default function AdminLararePage() {
   })
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 20
 
   const supabase = createClient()
 
@@ -177,6 +179,8 @@ export default function AdminLararePage() {
     if (filter === 'inaktiva') return !isActive(t)
     return true
   })
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -210,7 +214,7 @@ export default function AdminLararePage() {
       <main className="mx-auto max-w-5xl px-6 py-8">
         <div className="mb-6 flex gap-2">
           {tabs.map(tab => (
-            <button key={tab.key} onClick={() => setFilter(tab.key)}
+            <button key={tab.key} onClick={() => { setFilter(tab.key); setPage(1) }}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${filter === tab.key ? 'bg-(--teal) text-white' : 'bg-white text-(--text-dark) hover:bg-(--teal-light)'}`}>
               {tab.label}
             </button>
@@ -236,7 +240,7 @@ export default function AdminLararePage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(t => (
+                {paginated.map(t => (
                   <tr key={t.id} className="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-(--teal-light) transition-colors"
                     onClick={() => openTeacher(t)}>
                     <td className="px-4 py-3">
@@ -266,6 +270,31 @@ export default function AdminLararePage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between text-sm">
+            <p className="text-gray-500">
+              Visar {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} av {filtered.length}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Föregående
+              </button>
+              <span className="flex items-center px-3 py-1.5 text-gray-500">{page} / {totalPages}</span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Nästa →
+              </button>
+            </div>
           </div>
         )}
       </main>

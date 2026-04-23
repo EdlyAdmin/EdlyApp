@@ -86,6 +86,8 @@ export default function AdminBarnPage() {
   const [adminNotes, setAdminNotes] = useState('')
   const [notesSaving, setNotesSaving] = useState(false)
   const [notesSaved, setNotesSaved] = useState(false)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 20
 
   // Redigeringsformulär
   const [editForm, setEditForm] = useState({
@@ -265,6 +267,8 @@ export default function AdminBarnPage() {
     if (filter === 'inaktiva') return c.group_status !== 'active'
     return true
   })
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   function formatDate(iso: string) {
     return new Date(iso).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -302,7 +306,7 @@ export default function AdminBarnPage() {
 
         <div className="mb-6 flex gap-2">
           {tabs.map(tab => (
-            <button key={tab.key} onClick={() => setFilter(tab.key)}
+            <button key={tab.key} onClick={() => { setFilter(tab.key); setPage(1) }}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${filter === tab.key ? 'bg-(--teal) text-white' : 'bg-white text-(--text-dark) hover:bg-(--teal-light)'}`}>
               {tab.label}
             </button>
@@ -329,7 +333,7 @@ export default function AdminBarnPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(c => (
+                {paginated.map(c => (
                   <tr key={c.id} className="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-(--teal-light) transition-colors"
                     onClick={() => openChild(c)}>
                     <td className="px-4 py-3">
@@ -360,6 +364,31 @@ export default function AdminBarnPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between text-sm">
+            <p className="text-gray-500">
+              Visar {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} av {filtered.length}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Föregående
+              </button>
+              <span className="flex items-center px-3 py-1.5 text-gray-500">{page} / {totalPages}</span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Nästa →
+              </button>
+            </div>
           </div>
         )}
       </main>
