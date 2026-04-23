@@ -16,22 +16,15 @@ function parseStr(val: any): string {
   return val != null ? String(val).trim() : ''
 }
 
-// Normaliserar diagnos-strängar till systemets interna värden
-const DIAGNOSIS_ALIASES: Record<string, string> = {
-  sprakstorning: 'sprakstorning',
-  språkstörning: 'sprakstorning',
-  sprakstörning: 'sprakstorning',
-  add: 'adhd',
-  övrigt: 'annat',
-  ovrigt: 'annat',
-  if: 'annat',
-}
-
-function normalizeDiagnosis(raw: string): string {
-  const lower = raw.toLowerCase().trim()
-  // Ersätt svenska tecken för att matcha interna värden
-  const ascii = lower.replace(/å/g, 'a').replace(/ä/g, 'a').replace(/ö/g, 'o')
-  return DIAGNOSIS_ALIASES[lower] ?? DIAGNOSIS_ALIASES[ascii] ?? lower
+// Normaliserar session_length-text till interna värden (0-15, 15-30, 30-45, 45-60)
+function normalizeSessionLength(raw: string): string | null {
+  if (!raw) return null
+  const s = raw.toLowerCase()
+  if (s.includes('0-15') || s.includes('0 - 15')) return '0-15'
+  if (s.includes('15-30') || s.includes('15 - 30') || (s.includes('30') && s.includes('till'))) return '15-30'
+  if (s.includes('30-45') || s.includes('30 - 45') || (s.includes('45') && s.includes('till'))) return '30-45'
+  if (s.includes('45-60') || s.includes('45 - 60') || s.includes('60')) return '45-60'
+  return raw // spara råvärdet om inget matchar
 }
 
 export async function POST(req: NextRequest) {
@@ -113,10 +106,10 @@ export async function POST(req: NextRequest) {
       const birthdate = parseStr(row['Födelsedatum (ÅÅÅÅ-MM-DD)']) || parseStr(row['Födelsedatum'])
       const subjectRaw = parseStr(row['Ämne']).toLowerCase()
       const subject = VALID_SUBJECTS.includes(subjectRaw) ? subjectRaw : null
-      const diagnosRaw = parseList(row['Diagnos']).map(normalizeDiagnosis)
-      const diagnoses = diagnosRaw.filter(d => VALID_DIAGNOSES.includes(d))
-      const diagnosisOther = diagnosRaw.filter(d => !VALID_DIAGNOSES.includes(d)).join(', ') || null
-      const extraInfo = parseStr(row['Övrig info']) || null
+      // Kolumn D ("Diagnos") sparas som övrig info per Johans format
+      const extraInfo = parseStr(row['Diagnos']) || parseStr(row['Övrig info']) || null
+      // Kolumn E ("Hur länge") → session_length
+      const sessionLength = normalizeSessionLength(parseStr(row['Hur länge']))
       const parentName = parseStr(row['Förälderns namn'])
       const parentEmail = parseStr(row['Förälderns e-post'])
 
@@ -154,9 +147,9 @@ export async function POST(req: NextRequest) {
         name: childName,
         birthdate: validBirthdate,
         subjects: [subject],
-        diagnoses,
-        diagnosis_other: diagnosisOther,
+        diagnoses: [],
         extra_info: extraInfo,
+        session_length: sessionLength,
         family_id: familyId,
       }).select('id').single()
 
