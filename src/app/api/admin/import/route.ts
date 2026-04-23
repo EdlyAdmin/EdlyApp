@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
       const rowNum = i + 2
       const childName = parseStr(row['Barnets namn'])
       const birthdate = parseStr(row['Födelsedatum (ÅÅÅÅ-MM-DD)']) || parseStr(row['Födelsedatum'])
-      const subjectRaw = parseStr(row['Ämne']).toLowerCase()
+      const subjectRaw = parseStr(row['Ämne']).toLowerCase().replace('matematik', 'matte')
       const subject = VALID_SUBJECTS.includes(subjectRaw) ? subjectRaw : null
       // Kolumn D ("Diagnos") sparas som övrig info per Johans format
       const extraInfo = parseStr(row['Diagnos']) || parseStr(row['Övrig info']) || null
