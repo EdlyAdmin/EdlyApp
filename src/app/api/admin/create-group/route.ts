@@ -32,7 +32,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const status = childIds.length >= 2 ? 'full' : 'forming'
+  // Manuellt skapade grupper godkänns direkt alltid
+  const status = 'active'
 
   const { data: group, error: groupError } = await service
     .from('groups')
