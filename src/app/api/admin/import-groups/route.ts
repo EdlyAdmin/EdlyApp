@@ -134,6 +134,14 @@ export async function POST(req: NextRequest) {
           errors.push(`Barn "${child.name}": ${memberErr.message}`)
         }
       }
+
+      // Uppdatera gruppstatus baserat på antal barn
+      const { count } = await service
+        .from('group_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('group_id', group.id)
+      const newStatus = (count ?? 0) >= 2 ? 'full' : 'forming'
+      await service.from('groups').update({ status: newStatus }).eq('id', group.id)
     }
 
     return NextResponse.json({ success: true, groupsCreated, errors })
