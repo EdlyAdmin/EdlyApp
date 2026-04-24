@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 
 interface ChildSummary { teachersCreated: number; childrenCreated: number; groupsCreated: number }
 interface TeacherSummary { created: number; skipped: number }
+interface GroupSummary { groupsCreated: number }
 
 function DropZone({ file, onChange, accept = '.xlsx' }: { file: File | null; onChange: (f: File) => void; accept?: string }) {
   const ref = useRef<HTMLInputElement>(null)
@@ -50,6 +51,12 @@ export default function ImportPage() {
   const [lararResult, setLararResult] = useState<{ summary: TeacherSummary; errors: string[] } | null>(null)
   const [lararError, setLararError] = useState<string | null>(null)
 
+  // Grupp-import
+  const [gruppFile, setGruppFile] = useState<File | null>(null)
+  const [gruppLoading, setGruppLoading] = useState(false)
+  const [gruppResult, setGruppResult] = useState<{ summary: GroupSummary; errors: string[] } | null>(null)
+  const [gruppError, setGruppError] = useState<string | null>(null)
+
   async function handleBarnImport() {
     if (!barnFile) return
     setBarnLoading(true); setBarnResult(null); setBarnError(null)
@@ -72,6 +79,18 @@ export default function ImportPage() {
     if (!res.ok) setLararError(body.error ?? 'Något gick fel.')
     else setLararResult({ summary: { created: body.created, skipped: body.skipped }, errors: body.errors ?? [] })
     setLararLoading(false)
+  }
+
+  async function handleGruppImport() {
+    if (!gruppFile) return
+    setGruppLoading(true); setGruppResult(null); setGruppError(null)
+    const form = new FormData()
+    form.append('file', gruppFile)
+    const res = await fetch('/api/admin/import-groups', { method: 'POST', body: form })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) setGruppError(body.error ?? 'Något gick fel.')
+    else setGruppResult({ summary: { groupsCreated: body.groupsCreated }, errors: body.errors ?? [] })
+    setGruppLoading(false)
   }
 
   return (
@@ -145,6 +164,29 @@ export default function ImportPage() {
                 ))}
               </div>
               <ErrorList errors={barnResult.errors} />
+            </div>
+          )}
+        </section>
+
+        {/* Importera grupper */}
+        <section className="rounded-xl bg-white p-6 shadow-sm space-y-4">
+          <div>
+            <h2 className="font-semibold text-gray-900">Importera grupper</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Kolumner: Lärare, Barnet, Förälder (e-post), Diagnos, Ämne, Ålder.
+              Läraren förs vidare när cellen är tom. Barn och lärare måste redan finnas i systemet.
+            </p>
+          </div>
+          <DropZone file={gruppFile} onChange={f => { setGruppFile(f); setGruppResult(null); setGruppError(null) }} />
+          {gruppFile && <Button variant="primary" className="w-full" loading={gruppLoading} onClick={handleGruppImport}>Importera grupper</Button>}
+          {gruppError && <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{gruppError}</div>}
+          {gruppResult && (
+            <div className="space-y-3">
+              <div className="rounded-lg bg-(--teal-light) p-4 text-center">
+                <p className="text-2xl font-bold text-(--teal)">{gruppResult.summary.groupsCreated}</p>
+                <p className="text-xs text-(--teal-mid) mt-1">Grupper skapade</p>
+              </div>
+              <ErrorList errors={gruppResult.errors} />
             </div>
           )}
         </section>
