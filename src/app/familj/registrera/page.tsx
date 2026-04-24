@@ -130,6 +130,20 @@ export default function FamiljRegistrera() {
 
   return (
     <AuthLayout title="Anmäl ditt barn" subtitle="Skapa ett konto för din familj">
+      <div className="mb-6 rounded-xl border border-(--beige-dark) bg-(--beige) p-5 space-y-3">
+        <p className="text-sm font-semibold text-(--text-dark)">Tack för att du anmäler ditt barn till Edly. Innan du går vidare, tänk på följande:</p>
+        <ul className="space-y-2">
+          <li className="flex items-start gap-2 text-sm text-(--text-mid)">
+            <span className="mt-0.5 shrink-0 text-(--teal)">•</span>
+            <span><strong className="text-(--text-dark)">Prata med ditt barn.</strong> Säkerställ att barnet själv vill delta och är berett att närvara regelbundet – det är grunden för att undervisningen ska ge resultat.</span>
+          </li>
+          <li className="flex items-start gap-2 text-sm text-(--text-mid)">
+            <span className="mt-0.5 shrink-0 text-(--teal)">•</span>
+            <span><strong className="text-(--text-dark)">Använd en aktiv e-postadress.</strong> All viktig information om plats, schema och kontakt skickas dit.</span>
+          </li>
+        </ul>
+      </div>
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="rounded-lg bg-(--teal-light) px-4 py-3">
           <p className="text-sm font-semibold text-(--teal)">Dina uppgifter</p>
