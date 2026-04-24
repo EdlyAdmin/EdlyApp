@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { DetailPanel } from '@/components/ui/DetailPanel'
+import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import type { Subject } from '@/lib/supabase/types'
 
 interface PendingTeacher {
@@ -647,28 +648,13 @@ export default function AdminPage() {
               <h1 className="text-lg font-bold text-(--teal) sm:text-xl">Edly — Admin</h1>
               <p className="hidden text-sm text-(--teal-mid) sm:block">Hantera lärare och matchningar</p>
             </div>
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                variant="primary"
-                className="text-xs px-3 py-2 min-h-[36px]"
-                loading={matchingLoading}
-                onClick={handleRunMatching}
-              >
-                Kör matchning
-              </Button>
-              <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/larare'}>
-                Lärare
-              </Button>
-              <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/barn'}>
-                Barn
-              </Button>
-              <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/importera'}>
-                Importera
-              </Button>
-              <Button variant="secondary" onClick={handleLogout} className="text-xs px-3 py-2 min-h-[36px]">
-                Logga ut
-              </Button>
-            </div>
+            <HeaderMenu items={[
+              { label: 'Kör matchning', onClick: handleRunMatching, variant: 'primary', loading: matchingLoading },
+              { label: 'Lärare', onClick: () => window.location.href = '/admin/larare' },
+              { label: 'Barn', onClick: () => window.location.href = '/admin/barn' },
+              { label: 'Importera', onClick: () => window.location.href = '/admin/importera' },
+              { label: 'Logga ut', onClick: handleLogout },
+            ]} />
           </div>
         </div>
       </header>

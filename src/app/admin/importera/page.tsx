@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
+import { HeaderMenu } from '@/components/ui/HeaderMenu'
 
 interface ChildSummary { teachersCreated: number; childrenCreated: number; groupsCreated: number }
 interface TeacherSummary { created: number; skipped: number }
@@ -101,9 +102,9 @@ export default function ImportPage() {
             <h1 className="text-lg font-bold text-(--teal) sm:text-xl">Importera data</h1>
             <p className="hidden text-sm text-(--teal-mid) sm:block">Importera lärare och barn från Excel</p>
           </div>
-          <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => router.push('/admin')}>
-            ← Tillbaka
-          </Button>
+          <HeaderMenu items={[
+            { label: '← Tillbaka', onClick: () => router.push('/admin') },
+          ]} />
         </div>
       </header>
 

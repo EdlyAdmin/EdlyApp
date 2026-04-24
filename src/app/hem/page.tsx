@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import { Input } from '@/components/ui/Input'
 import type { Subject } from '@/lib/supabase/types'
 
@@ -239,9 +240,9 @@ export default function HemPage() {
             <h1 className="text-xl font-bold text-(--teal)">Hej, {family?.parentName}!</h1>
             <p className="text-sm text-(--teal-mid)">Dina barn hos Edly</p>
           </div>
-          <Button variant="secondary" onClick={handleLogout} className="text-xs px-3 py-2 min-h-[36px] shrink-0">
-            Logga ut
-          </Button>
+          <HeaderMenu items={[
+            { label: 'Logga ut', onClick: handleLogout },
+          ]} />
         </div>
       </header>
 

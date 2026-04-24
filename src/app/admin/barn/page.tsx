@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { DetailPanel } from '@/components/ui/DetailPanel'
+import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import type { Subject } from '@/lib/supabase/types'
 
 type Filter = 'alla' | 'aktiva' | 'inaktiva'
@@ -288,14 +289,10 @@ export default function AdminBarnPage() {
             <h1 className="text-lg font-bold text-(--teal) sm:text-xl">Alla barn</h1>
             <p className="text-sm text-(--teal-mid)">{children.length} registrerade</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/api/admin/export-members'}>
-              Exportera
-            </Button>
-            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => router.push('/admin')}>
-              ← Tillbaka
-            </Button>
-          </div>
+          <HeaderMenu items={[
+            { label: 'Exportera', onClick: () => window.location.href = '/api/admin/export-members' },
+            { label: '← Tillbaka', onClick: () => router.push('/admin') },
+          ]} />
         </div>
       </header>
 

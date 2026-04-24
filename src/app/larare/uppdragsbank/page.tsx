@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { HeaderMenu } from '@/components/ui/HeaderMenu'
 import type { Subject } from '@/lib/supabase/types'
 
 interface AssignmentEntry {
@@ -89,16 +90,10 @@ export default function UppdragsbankPage() {
             <h1 className="text-lg font-bold text-(--teal) sm:text-xl">Uppdragsbank</h1>
             <p className="hidden text-sm text-(--teal-mid) sm:block">Anonymiserade barnprofiler som söker lärare</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link href="/larare/installningar">
-              <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]">
-                Notiser
-              </Button>
-            </Link>
-            <Button variant="secondary" onClick={handleLogout} className="text-xs px-3 py-2 min-h-[36px]">
-              Logga ut
-            </Button>
-          </div>
+          <HeaderMenu items={[
+            { label: 'Notiser', onClick: () => window.location.href = '/larare/installningar' },
+            { label: 'Logga ut', onClick: handleLogout },
+          ]} />
         </div>
       </header>
 

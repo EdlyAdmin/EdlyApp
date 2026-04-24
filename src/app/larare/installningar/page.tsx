@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { HeaderMenu } from '@/components/ui/HeaderMenu'
 
 export default function LarareInstallningarPage() {
   const [notifyNewChildren, setNotifyNewChildren] = useState(false)
@@ -60,11 +61,9 @@ export default function LarareInstallningarPage() {
       <header className="bg-white shadow-sm">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <h1 className="text-lg font-bold text-(--teal) sm:text-xl">Notifierings&shy;inställningar</h1>
-          <Link href="/larare/uppdragsbank">
-            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px] shrink-0">
-              Tillbaka
-            </Button>
-          </Link>
+          <HeaderMenu items={[
+            { label: '← Tillbaka', onClick: () => window.location.href = '/larare/uppdragsbank' },
+          ]} />
         </div>
       </header>
 
