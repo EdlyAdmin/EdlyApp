@@ -262,6 +262,12 @@ export default function AdminPage() {
   const [teacherPage, setTeacherPage] = useState(1)
   const PAGE_SIZE = 10
 
+  const [cgSubject, setCgSubject] = useState('')
+  const [cgChildIds, setCgChildIds] = useState<string[]>([])
+  const [cgLoading, setCgLoading] = useState(false)
+  const [cgError, setCgError] = useState<string | null>(null)
+  const [cgSuccess, setCgSuccess] = useState<string | null>(null)
+
   async function handleRunMatching() {
     setMatchingLoading(true)
     setMatchingResult(null)
@@ -577,6 +583,44 @@ export default function AdminPage() {
     fetchData()
   }
 
+  function openTeacherPanel(teacher: ApprovedTeacher) {
+    setCgSubject(teacher.subjects_can[0] ?? '')
+    setCgChildIds([])
+    setCgError(null)
+    setCgSuccess(null)
+    setSelectedTeacher(teacher)
+  }
+
+  function closeTeacherPanel() {
+    setSelectedTeacher(null)
+    setCgSubject('')
+    setCgChildIds([])
+    setCgError(null)
+    setCgSuccess(null)
+  }
+
+  async function handleCreateGroup() {
+    if (!selectedTeacher) return
+    setCgLoading(true)
+    setCgError(null)
+    setCgSuccess(null)
+    const res = await fetch('/api/admin/create-group', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teacherId: selectedTeacher.id, subject: cgSubject || null, childIds: cgChildIds }),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setCgError(body.error ?? 'Något gick fel.')
+    } else {
+      const label = body.status === 'full' ? 'full (väntar på godkännande)' : 'under uppbyggnad'
+      setCgSuccess(`Grupp skapad — status: ${label}.`)
+      setCgChildIds([])
+      fetchData()
+    }
+    setCgLoading(false)
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     window.location.href = '/admin/logga-in'
@@ -714,7 +758,7 @@ export default function AdminPage() {
                     <tr
                       key={t.id}
                       className="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-(--teal-light) transition-colors"
-                      onClick={() => setSelectedTeacher(t)}
+                      onClick={() => openTeacherPanel(t)}
                     >
                       <td className="px-4 py-3">
                         <p className="font-medium text-gray-900">{t.name}</p>
@@ -889,12 +933,14 @@ export default function AdminPage() {
         </section>
 
         {/* Grupper under uppbyggnad */}
-        {formingGroups.length > 0 && (
-          <section>
+        <section>
             <h2 className="mb-4 text-lg font-bold text-(--teal)">
               Grupper under uppbyggnad
               <span className="ml-2 text-sm font-normal text-gray-500">({formingGroups.length} st)</span>
             </h2>
+            {formingGroups.length === 0 ? (
+              <Card><p className="text-sm text-gray-500">Inga grupper under uppbyggnad.</p></Card>
+            ) : (
             <div className="space-y-2">
               {formingGroups.map(g => {
                 const expanded = expandedGroups.has(g.id)
@@ -964,8 +1010,8 @@ export default function AdminPage() {
                 )
               })}
             </div>
-          </section>
-        )}
+            )}
+        </section>
 
         {/* Aktiva grupper */}
         <section>
@@ -1119,7 +1165,7 @@ export default function AdminPage() {
       {/* Detaljpanel — lärare */}
       <DetailPanel
         open={!!selectedTeacher}
-        onClose={() => setSelectedTeacher(null)}
+        onClose={closeTeacherPanel}
         title="Lärarinfo"
       >
         {selectedTeacher && (
@@ -1165,6 +1211,78 @@ export default function AdminPage() {
                 <p className="mt-1 whitespace-pre-wrap text-gray-900">{selectedTeacher.motivation}</p>
               </div>
             )}
+
+            <div className="border-t border-gray-100 pt-5 space-y-4">
+              <p className="text-xs font-bold uppercase text-gray-400">Skapa grupp manuellt</p>
+
+              {/* Ämne */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Ämne</label>
+                <select
+                  value={cgSubject}
+                  onChange={e => { setCgSubject(e.target.value); setCgChildIds([]) }}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-(--teal)"
+                >
+                  <option value="">Inget specifikt ämne</option>
+                  {selectedTeacher.subjects_can.map(s => (
+                    <option key={s} value={s}>{SUBJECT_LABELS[s] ?? s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Barn */}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Barn <span className="text-gray-400 font-normal">(välj 1–2)</span>
+                </label>
+                {(() => {
+                  const available = queuedChildren.filter(c =>
+                    c.queue_status === 'waiting' &&
+                    (!cgSubject || c.subjects.includes(cgSubject as any))
+                  )
+                  if (available.length === 0) {
+                    return <p className="text-sm text-gray-400 italic">Inga väntande barn{cgSubject ? ` i ${SUBJECT_LABELS[cgSubject]}` : ''}.</p>
+                  }
+                  return (
+                    <div className="max-h-56 overflow-y-auto space-y-1 rounded-lg border border-gray-200 bg-white p-2">
+                      {available.map(c => {
+                        const checked = cgChildIds.includes(c.id)
+                        const disabled = !checked && cgChildIds.length >= 2
+                        return (
+                          <label key={c.id} className={`flex items-center gap-3 rounded-lg px-3 py-2 cursor-pointer transition-colors ${checked ? 'bg-(--teal-light)' : 'hover:bg-gray-50'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={disabled}
+                              onChange={() => {
+                                setCgChildIds(prev =>
+                                  checked ? prev.filter(id => id !== c.id) : [...prev, c.id]
+                                )
+                              }}
+                              className="h-4 w-4 accent-(--teal)"
+                            />
+                            <span className="text-sm text-gray-900">{c.child_name}</span>
+                            <span className="text-xs text-gray-400">{calcAge(c.birthdate)} år · {c.family_name}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {cgError && <p className="text-sm text-red-600">{cgError}</p>}
+              {cgSuccess && <p className="text-sm text-green-700">{cgSuccess}</p>}
+
+              <Button
+                variant="primary"
+                loading={cgLoading}
+                onClick={handleCreateGroup}
+                className="w-full"
+              >
+                Skapa grupp
+              </Button>
+            </div>
           </div>
         )}
       </DetailPanel>

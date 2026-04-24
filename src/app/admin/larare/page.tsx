@@ -43,6 +43,22 @@ const SUBJECT_LABELS: Record<string, string> = {
   svenska: 'Svenska', matte: 'Matte', engelska: 'Engelska',
 }
 
+function calcAge(birthdate: string) {
+  const birth = new Date(birthdate)
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  if (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate())) age--
+  return age
+}
+
+interface WaitingChild {
+  id: string
+  name: string
+  birthdate: string
+  subjects: Subject[]
+  parent_name: string
+}
+
 function statusBadge(teacher: Teacher) {
   if (teacher.status === 'pending') return <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Väntar på granskning</span>
   if (teacher.status === 'rejected') return <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">Nekad</span>
@@ -72,6 +88,13 @@ export default function AdminLararePage() {
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 10
 
+  const [waitingChildren, setWaitingChildren] = useState<WaitingChild[]>([])
+  const [cgSubject, setCgSubject] = useState('')
+  const [cgChildIds, setCgChildIds] = useState<string[]>([])
+  const [cgLoading, setCgLoading] = useState(false)
+  const [cgError, setCgError] = useState<string | null>(null)
+  const [cgSuccess, setCgSuccess] = useState<string | null>(null)
+
   const supabase = createClient()
 
   async function fetchTeachers() {
@@ -100,7 +123,32 @@ export default function AdminLararePage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchTeachers() }, [])
+  useEffect(() => {
+    fetchTeachers()
+    fetchWaitingChildren()
+  }, [])
+
+  async function fetchWaitingChildren() {
+    const { data } = await supabase
+      .from('children')
+      .select('id, name, birthdate, subjects, families(parent_name), group_members(id, groups(status))')
+      .order('created_at', { ascending: true })
+
+    const toArr = (v: any) => !v ? [] : Array.isArray(v) ? v : [v]
+    const waiting = (data ?? []).filter((c: any) => {
+      const members = toArr(c.group_members)
+      if (members.length === 0) return true
+      const status = (Array.isArray(members[0].groups) ? members[0].groups[0] : members[0].groups)?.status
+      return !status || status === 'forming'
+    })
+    setWaitingChildren(waiting.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      birthdate: c.birthdate,
+      subjects: c.subjects ?? [],
+      parent_name: (Array.isArray(c.families) ? c.families[0] : c.families)?.parent_name ?? '—',
+    })))
+  }
 
   async function handleDeleteTeacher() {
     if (!selected) return
@@ -133,6 +181,33 @@ export default function AdminLararePage() {
       subjectsCan: t.subjects_can, subjectsBlocked: t.subjects_blocked,
       ageGroups: t.age_groups, maxGroups: t.max_groups, paused: t.paused,
     })
+    setCgSubject(t.subjects_can[0] ?? '')
+    setCgChildIds([])
+    setCgError(null)
+    setCgSuccess(null)
+  }
+
+  async function handleCreateGroup() {
+    if (!selected) return
+    setCgLoading(true)
+    setCgError(null)
+    setCgSuccess(null)
+    const res = await fetch('/api/admin/create-group', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teacherId: selected.id, subject: cgSubject || null, childIds: cgChildIds }),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setCgError(body.error ?? 'Något gick fel.')
+    } else {
+      const label = body.status === 'full' ? 'full (väntar på godkännande)' : 'under uppbyggnad'
+      setCgSuccess(`Grupp skapad — status: ${label}.`)
+      setCgChildIds([])
+      fetchTeachers()
+      fetchWaitingChildren()
+    }
+    setCgLoading(false)
   }
 
   function toggleCan(s: Subject) {
@@ -325,6 +400,66 @@ export default function AdminLararePage() {
 
             <div><p className="text-xs font-bold uppercase text-gray-400">Matchning</p>
               <p className="mt-1 text-sm text-gray-900">{selected.paused ? '🚫 Blockerad från nya matchningar' : '✓ Tillgänglig för matchning'}</p>
+            </div>
+
+            <div className="border-t border-gray-100 pt-5 space-y-4">
+              <p className="text-xs font-bold uppercase text-gray-400">Skapa grupp manuellt</p>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Ämne</label>
+                <select
+                  value={cgSubject}
+                  onChange={e => { setCgSubject(e.target.value); setCgChildIds([]) }}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-(--teal)"
+                >
+                  <option value="">Inget specifikt ämne</option>
+                  {selected.subjects_can.map(s => (
+                    <option key={s} value={s}>{SUBJECT_LABELS[s] ?? s}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Barn <span className="text-gray-400 font-normal">(välj 1–2)</span>
+                </label>
+                {(() => {
+                  const available = waitingChildren.filter(c =>
+                    !cgSubject || c.subjects.includes(cgSubject as Subject)
+                  )
+                  if (available.length === 0) {
+                    return <p className="text-sm text-gray-400 italic">Inga väntande barn{cgSubject ? ` i ${SUBJECT_LABELS[cgSubject]}` : ''}.</p>
+                  }
+                  return (
+                    <div className="max-h-56 overflow-y-auto space-y-1 rounded-lg border border-gray-200 bg-white p-2">
+                      {available.map(c => {
+                        const checked = cgChildIds.includes(c.id)
+                        const disabled = !checked && cgChildIds.length >= 2
+                        return (
+                          <label key={c.id} className={`flex items-center gap-3 rounded-lg px-3 py-2 cursor-pointer transition-colors ${checked ? 'bg-(--teal-light)' : 'hover:bg-gray-50'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={disabled}
+                              onChange={() => setCgChildIds(prev => checked ? prev.filter(id => id !== c.id) : [...prev, c.id])}
+                              className="h-4 w-4 accent-(--teal)"
+                            />
+                            <span className="text-sm text-gray-900">{c.name}</span>
+                            <span className="text-xs text-gray-400">{calcAge(c.birthdate)} år · {c.parent_name}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {cgError && <p className="text-sm text-red-600">{cgError}</p>}
+              {cgSuccess && <p className="text-sm text-green-700">{cgSuccess}</p>}
+
+              <Button variant="primary" loading={cgLoading} onClick={handleCreateGroup} className="w-full">
+                Skapa grupp
+              </Button>
             </div>
 
             <Button variant="secondary" className="w-full text-sm mt-2" onClick={() => setEditing(true)}>
