@@ -37,7 +37,10 @@ export default function FamiljRegistrera() {
     lastName: '',
     email: '',
     phone: '',
-    address: '',
+    street: '',
+    streetNumber: '',
+    postalCode: '',
+    city: '',
     password: '',
     childName: '',
     childBirthdate: '',
@@ -99,7 +102,10 @@ export default function FamiljRegistrera() {
         parentName: `${form.firstName.trim()} ${form.lastName.trim()}`,
         email: form.email,
         phone: form.phone.trim() || null,
-        address: form.address.trim() || null,
+        street: form.street.trim() || null,
+        streetNumber: form.streetNumber.trim() || null,
+        postalCode: form.postalCode.trim() || null,
+        city: form.city.trim() || null,
         sessionLength: form.sessionLength,
         hasWebcam: form.hasWebcam,
         childName: form.childName,
@@ -133,7 +139,22 @@ export default function FamiljRegistrera() {
         <Input label="Efternamn" value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} required />
         <Input label="E-postadress" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
         <Input label="Telefonnummer" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="070-000 00 00" />
-        <Input label="Adress" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Gatuadress, postnummer och ort" />
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <Input label="Gatuadress" value={form.street} onChange={e => setForm(f => ({ ...f, street: e.target.value }))} placeholder="Storgatan" />
+          </div>
+          <div className="w-24">
+            <Input label="Nr" value={form.streetNumber} onChange={e => setForm(f => ({ ...f, streetNumber: e.target.value }))} placeholder="12" />
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <div className="w-32">
+            <Input label="Postnummer" value={form.postalCode} onChange={e => setForm(f => ({ ...f, postalCode: e.target.value }))} placeholder="123 45" />
+          </div>
+          <div className="flex-1">
+            <Input label="Postort" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} placeholder="Stockholm" />
+          </div>
+        </div>
         <Input label="Välj lösenord" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required minLength={8} />
 
         <div className="rounded-lg bg-(--teal-light) px-4 py-3">
