@@ -260,7 +260,7 @@ export default function AdminPage() {
   const [matchingResult, setMatchingResult] = useState<string | null>(null)
   const [queuePage, setQueuePage] = useState(1)
   const [teacherPage, setTeacherPage] = useState(1)
-  const PAGE_SIZE = 20
+  const PAGE_SIZE = 10
 
   async function handleRunMatching() {
     setMatchingLoading(true)

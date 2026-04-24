@@ -70,7 +70,7 @@ export default function AdminLararePage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [page, setPage] = useState(1)
-  const PAGE_SIZE = 20
+  const PAGE_SIZE = 10
 
   const supabase = createClient()
 

@@ -87,7 +87,7 @@ export default function AdminBarnPage() {
   const [notesSaving, setNotesSaving] = useState(false)
   const [notesSaved, setNotesSaved] = useState(false)
   const [page, setPage] = useState(1)
-  const PAGE_SIZE = 20
+  const PAGE_SIZE = 10
 
   // Redigeringsformulär
   const [editForm, setEditForm] = useState({
