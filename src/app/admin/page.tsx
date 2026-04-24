@@ -904,7 +904,17 @@ export default function AdminPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium text-gray-900">{g.teacher?.name}</p>
                         {g.subject && <span className="rounded-full bg-(--teal-light) px-2 py-0.5 text-xs text-(--teal)">{SUBJECT_LABELS[g.subject] ?? g.subject}</span>}
-                        <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">{g.children.length}/2 barn</span>
+                        <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
+                          {g.children.length} barn
+                        </span>
+                        {(() => {
+                          const t = approvedTeachers.find(t => t.id === g.teacher_id)
+                          return t ? (
+                            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                              {t.active_groups}/{t.max_groups} grupper
+                            </span>
+                          ) : null
+                        })()}
                       </div>
                       <button onClick={() => toggleGroup(g.id)} className="text-xs text-(--teal) font-medium hover:underline shrink-0 ml-2">
                         {expanded ? 'Visa mindre ↑' : 'Visa mer ↓'}
