@@ -258,6 +258,9 @@ export default function AdminPage() {
   const [confirmDeleteGroup, setConfirmDeleteGroup] = useState<string | null>(null)
   const [matchingLoading, setMatchingLoading] = useState(false)
   const [matchingResult, setMatchingResult] = useState<string | null>(null)
+  const [queuePage, setQueuePage] = useState(1)
+  const [teacherPage, setTeacherPage] = useState(1)
+  const PAGE_SIZE = 20
 
   async function handleRunMatching() {
     setMatchingLoading(true)
@@ -707,7 +710,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {approvedTeachers.map(t => (
+                  {approvedTeachers.slice((teacherPage - 1) * PAGE_SIZE, teacherPage * PAGE_SIZE).map(t => (
                     <tr
                       key={t.id}
                       className="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-(--teal-light) transition-colors"
@@ -739,6 +742,24 @@ export default function AdminPage() {
               </table>
             </div>
           )}
+          {approvedTeachers.length > PAGE_SIZE && (
+            <div className="mt-4 flex items-center justify-between text-sm">
+              <p className="text-gray-500">
+                Visar {(teacherPage - 1) * PAGE_SIZE + 1}–{Math.min(teacherPage * PAGE_SIZE, approvedTeachers.length)} av {approvedTeachers.length}
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setTeacherPage(p => Math.max(1, p - 1))} disabled={teacherPage === 1}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  ← Föregående
+                </button>
+                <span className="flex items-center px-3 py-1.5 text-gray-500">{teacherPage} / {Math.ceil(approvedTeachers.length / PAGE_SIZE)}</span>
+                <button onClick={() => setTeacherPage(p => Math.min(Math.ceil(approvedTeachers.length / PAGE_SIZE), p + 1))} disabled={teacherPage >= Math.ceil(approvedTeachers.length / PAGE_SIZE)}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  Nästa →
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Barn i kön */}
@@ -764,7 +785,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {queuedChildren.map(c => (
+                  {queuedChildren.slice((queuePage - 1) * PAGE_SIZE, queuePage * PAGE_SIZE).map(c => (
                     <tr
                       key={c.id}
                       className="cursor-pointer border-b border-gray-50 last:border-0 hover:bg-(--teal-light) transition-colors"
@@ -794,6 +815,24 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {queuedChildren.length > PAGE_SIZE && (
+            <div className="mt-4 flex items-center justify-between text-sm">
+              <p className="text-gray-500">
+                Visar {(queuePage - 1) * PAGE_SIZE + 1}–{Math.min(queuePage * PAGE_SIZE, queuedChildren.length)} av {queuedChildren.length}
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setQueuePage(p => Math.max(1, p - 1))} disabled={queuePage === 1}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  ← Föregående
+                </button>
+                <span className="flex items-center px-3 py-1.5 text-gray-500">{queuePage} / {Math.ceil(queuedChildren.length / PAGE_SIZE)}</span>
+                <button onClick={() => setQueuePage(p => Math.min(Math.ceil(queuedChildren.length / PAGE_SIZE), p + 1))} disabled={queuePage >= Math.ceil(queuedChildren.length / PAGE_SIZE)}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  Nästa →
+                </button>
+              </div>
             </div>
           )}
         </section>
