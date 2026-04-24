@@ -508,7 +508,7 @@ export default function AdminPage() {
     // Grupper under uppbyggnad
     setFormingGroups((forming.data ?? []).map((g: any) => {
       const teacher = Array.isArray(g.teachers) ? g.teachers[0] : g.teachers
-      const members = Array.isArray(g.group_members) ? g.group_members : []
+      const members = Array.isArray(g.group_members) ? g.group_members : (g.group_members ? [g.group_members] : [])
       const groupChildren: GroupChild[] = members.map((m: any) => {
         const child = Array.isArray(m.children) ? m.children[0] : m.children
         const family = child ? (Array.isArray(child.families) ? child.families[0] : child.families) : null
@@ -923,6 +923,9 @@ export default function AdminPage() {
                     {expanded && (
                       <div className="mt-3 space-y-2">
                         <p className="text-xs text-gray-400">{g.teacher?.email}</p>
+                        {g.children.length === 0 && (
+                          <p className="text-xs text-gray-400 italic">Inga barn kopplade till den här gruppen ännu.</p>
+                        )}
                         {g.children.map((child, i) => (
                           <div key={child.child_id} className="rounded-lg bg-gray-50 px-4 py-2 flex items-center justify-between gap-2">
                             <div>
