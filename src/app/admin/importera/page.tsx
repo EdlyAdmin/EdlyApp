@@ -96,10 +96,10 @@ export default function ImportPage() {
   return (
     <div className="min-h-screen bg-(--beige)">
       <header className="bg-white shadow-sm">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-xl font-bold text-(--teal)">Edly — Importera data</h1>
-            <p className="text-sm text-(--teal-mid)">Importera lärare och barn från Excel</p>
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold text-(--teal) sm:text-xl">Importera data</h1>
+            <p className="hidden text-sm text-(--teal-mid) sm:block">Importera lärare och barn från Excel</p>
           </div>
           <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => router.push('/admin')}>
             ← Tillbaka
@@ -107,7 +107,7 @@ export default function ImportPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-6 py-8 space-y-8">
+      <main className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8 space-y-8">
 
         {/* Importera lärare */}
         <section className="rounded-xl bg-white p-6 shadow-sm space-y-4">

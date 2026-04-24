@@ -153,16 +153,16 @@ export default function FamiljRegistrera() {
         <Input label="Efternamn" value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} required />
         <Input label="E-postadress" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
         <Input label="Telefonnummer" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="070-000 00 00" />
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <div className="flex-1">
             <Input label="Gatuadress" value={form.street} onChange={e => setForm(f => ({ ...f, street: e.target.value }))} placeholder="Storgatan" />
           </div>
-          <div className="w-24">
+          <div className="sm:w-24">
             <Input label="Nr" value={form.streetNumber} onChange={e => setForm(f => ({ ...f, streetNumber: e.target.value }))} placeholder="12" />
           </div>
         </div>
-        <div className="flex gap-3">
-          <div className="w-32">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="sm:w-32">
             <Input label="Postnummer" value={form.postalCode} onChange={e => setForm(f => ({ ...f, postalCode: e.target.value }))} placeholder="123 45" />
           </div>
           <div className="flex-1">

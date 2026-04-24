@@ -283,10 +283,10 @@ export default function AdminBarnPage() {
   return (
     <div className="min-h-screen bg-(--beige)">
       <header className="bg-white shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-xl font-bold text-(--teal)">Edly — Alla barn</h1>
-            <p className="text-sm text-(--teal-mid)">{children.length} registrerade barn</p>
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold text-(--teal) sm:text-xl">Alla barn</h1>
+            <p className="text-sm text-(--teal-mid)">{children.length} registrerade</p>
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/api/admin/export-members'}>
@@ -299,7 +299,7 @@ export default function AdminBarnPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         {error && !selected && (
           <div className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
         )}

@@ -84,12 +84,12 @@ export default function UppdragsbankPage() {
   return (
     <div className="min-h-screen bg-(--beige)">
       <header className="bg-white shadow-sm">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-xl font-bold text-(--teal)">Uppdragsbank</h1>
-            <p className="text-sm text-(--teal-mid)">Anonymiserade barnprofiler som söker lärare</p>
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold text-(--teal) sm:text-xl">Uppdragsbank</h1>
+            <p className="hidden text-sm text-(--teal-mid) sm:block">Anonymiserade barnprofiler som söker lärare</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <Link href="/larare/installningar">
               <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]">
                 Notiser

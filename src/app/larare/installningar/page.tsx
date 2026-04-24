@@ -58,17 +58,17 @@ export default function LarareInstallningarPage() {
   return (
     <div className="min-h-screen bg-(--beige)">
       <header className="bg-white shadow-sm">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-          <h1 className="text-xl font-bold text-(--teal)">Notifierings&shy;inställningar</h1>
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <h1 className="text-lg font-bold text-(--teal) sm:text-xl">Notifierings&shy;inställningar</h1>
           <Link href="/larare/uppdragsbank">
-            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]">
+            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px] shrink-0">
               Tillbaka
             </Button>
           </Link>
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-6 py-8">
+      <main className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
         <Card header="E-postnotiser">
           <div className="space-y-4">
             <label className="flex cursor-pointer items-start gap-4">

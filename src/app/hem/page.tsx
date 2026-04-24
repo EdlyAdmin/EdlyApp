@@ -234,18 +234,18 @@ export default function HemPage() {
   return (
     <div className="min-h-screen bg-(--beige)">
       <header className="bg-white shadow-sm">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-          <div>
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="min-w-0">
             <h1 className="text-xl font-bold text-(--teal)">Hej, {family?.parentName}!</h1>
             <p className="text-sm text-(--teal-mid)">Dina barn hos Edly</p>
           </div>
-          <Button variant="secondary" onClick={handleLogout} className="text-xs px-3 py-2 min-h-[36px]">
+          <Button variant="secondary" onClick={handleLogout} className="text-xs px-3 py-2 min-h-[36px] shrink-0">
             Logga ut
           </Button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl space-y-6 px-6 py-8">
+      <main className="mx-auto max-w-2xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
         {(!family || family.children.length === 0) ? (
           <Card>
             <p className="text-center text-sm text-gray-500">Inga barn registrerade.</p>

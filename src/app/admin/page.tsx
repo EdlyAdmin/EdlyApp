@@ -641,37 +641,39 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-(--beige)">
       <header className="bg-white shadow-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-xl font-bold text-(--teal)">Edly — Adminpanel</h1>
-            <p className="text-sm text-(--teal-mid)">Hantera lärare och matchningar</p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="primary"
-              className="text-xs px-4 py-2 min-h-[36px]"
-              loading={matchingLoading}
-              onClick={handleRunMatching}
-            >
-              Kör matchning
-            </Button>
-            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/larare'}>
-              Alla lärare
-            </Button>
-            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/barn'}>
-              Alla barn
-            </Button>
-            <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/importera'}>
-              Importera
-            </Button>
-            <Button variant="secondary" onClick={handleLogout} className="text-xs px-3 py-2 min-h-[36px]">
-              Logga ut
-            </Button>
+        <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold text-(--teal) sm:text-xl">Edly — Admin</h1>
+              <p className="hidden text-sm text-(--teal-mid) sm:block">Hantera lärare och matchningar</p>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                variant="primary"
+                className="text-xs px-3 py-2 min-h-[36px]"
+                loading={matchingLoading}
+                onClick={handleRunMatching}
+              >
+                Kör matchning
+              </Button>
+              <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/larare'}>
+                Lärare
+              </Button>
+              <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/barn'}>
+                Barn
+              </Button>
+              <Button variant="secondary" className="text-xs px-3 py-2 min-h-[36px]" onClick={() => window.location.href = '/admin/importera'}>
+                Importera
+              </Button>
+              <Button variant="secondary" onClick={handleLogout} className="text-xs px-3 py-2 min-h-[36px]">
+                Logga ut
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-10 px-6 py-8">
+      <main className="mx-auto max-w-5xl space-y-10 px-4 py-6 sm:px-6 sm:py-8">
 
         {matchingResult && (
           <div className={`rounded-lg px-4 py-3 text-sm font-medium ${matchingResult.startsWith('✓') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
