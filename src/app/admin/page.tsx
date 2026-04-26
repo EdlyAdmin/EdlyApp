@@ -261,6 +261,7 @@ export default function AdminPage() {
   const [matchingResult, setMatchingResult] = useState<string | null>(null)
   const [queuePage, setQueuePage] = useState(1)
   const [teacherPage, setTeacherPage] = useState(1)
+  const [activeGroupPage, setActiveGroupPage] = useState(1)
   const PAGE_SIZE = 10
 
   const [cgSubject, setCgSubject] = useState('')
@@ -1010,7 +1011,7 @@ export default function AdminPage() {
             <Card><p className="text-sm text-gray-500">Inga aktiva grupper ännu.</p></Card>
           ) : (
             <div className="space-y-2">
-              {activeGroups.map(g => {
+              {activeGroups.slice((activeGroupPage - 1) * PAGE_SIZE, activeGroupPage * PAGE_SIZE).map(g => {
                 const expanded = expandedGroups.has(g.id)
                 return (
                   <Card key={g.id}>
@@ -1065,6 +1066,24 @@ export default function AdminPage() {
                   </Card>
                 )
               })}
+            </div>
+          )}
+          {activeGroups.length > PAGE_SIZE && (
+            <div className="mt-4 flex items-center justify-between text-sm">
+              <p className="text-gray-500">
+                Visar {(activeGroupPage - 1) * PAGE_SIZE + 1}–{Math.min(activeGroupPage * PAGE_SIZE, activeGroups.length)} av {activeGroups.length}
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setActiveGroupPage(p => Math.max(1, p - 1))} disabled={activeGroupPage === 1}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  ← Föregående
+                </button>
+                <span className="flex items-center px-3 py-1.5 text-gray-500">{activeGroupPage} / {Math.ceil(activeGroups.length / PAGE_SIZE)}</span>
+                <button onClick={() => setActiveGroupPage(p => Math.min(Math.ceil(activeGroups.length / PAGE_SIZE), p + 1))} disabled={activeGroupPage >= Math.ceil(activeGroups.length / PAGE_SIZE)}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  Nästa →
+                </button>
+              </div>
             </div>
           )}
         </section>
