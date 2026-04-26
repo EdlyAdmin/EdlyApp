@@ -435,8 +435,7 @@ export default function AdminPage() {
           )
         `)
         .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(20),
+        .order('created_at', { ascending: false }),
 
       supabase
         .from('mail_error_log')
